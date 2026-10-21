@@ -1,0 +1,458 @@
+/*
+  The Lonely Land, a reading map. Flyway's palette (../geo-bird): robin's-egg water, eggshell land, ink.
+  Robin orange means one thing, Olson's route. Each concept brings its own colour to the map and the list.
+  Type: Besley for titles, Libre Franklin for reading, Plex Mono for chapter numbers and coordinates.
+  Layout: one panel floats over a full-bleed map on wide screens; on phones it is a sheet along the bottom.
+*/
+:root {
+  --egg: #a9dad3;
+  --egg-deep: #8ac6be;
+  --egg-pale: #d3ede8;
+  --shell: #fffcf5;
+  --shell-dim: #efeadb;
+  --ink: #15282e;
+  --ink-soft: #4a636b;
+  --ink-faint: rgba(21, 40, 46, 0.14);
+  --robin: #e5532a;
+  --robin-deep: #ad3512;
+  --display: 'Besley', 'Clarendon', Georgia, serif;
+  --body: 'Libre Franklin', 'Helvetica Neue', Arial, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, Menlo, monospace;
+  --panel-w: 392px;
+  --edge: 20px;
+  --shadow: 0 1px 0 rgba(21, 40, 46, 0.08), 0 22px 48px -22px rgba(21, 40, 46, 0.5);
+  color-scheme: light;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+html, body { height: 100%; margin: 0; }
+body {
+  background: var(--egg);
+  color: var(--ink);
+  font: 400 16px/1.5 var(--body);
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] { display: none !important; }
+h1, h2, h3, p, ul { margin: 0; }
+ul { padding: 0; list-style: none; }
+button { font: inherit; color: inherit; }
+a { color: inherit; }
+:focus-visible { outline: 2.5px solid var(--ink); outline-offset: 2px; }
+
+.eyebrow {
+  font: 500 11px/1.3 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.app { position: fixed; inset: 0; }
+.map { position: absolute; inset: 0; background: var(--egg-pale); }
+
+/* ---------- panel ---------- */
+
+.panel {
+  position: absolute;
+  z-index: 2;
+  left: max(var(--edge), env(safe-area-inset-left, 0px));
+  top: var(--edge);
+  bottom: var(--edge);
+  width: var(--panel-w);
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  background: var(--shell);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+}
+
+.masthead {
+  display: grid;
+  gap: 4px;
+  padding: 22px 24px 18px;
+  border-bottom: 1px solid var(--ink-faint);
+}
+.masthead h1 {
+  font: 800 34px/1.02 var(--display);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+/* The title takes you back to the whole route. */
+.title-button {
+  padding: 0;
+  border: 0;
+  background: none;
+  font: inherit;
+  letter-spacing: inherit;
+  text-align: left;
+  color: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-decoration-color: transparent;
+  text-decoration-thickness: 3px;
+  text-underline-offset: 5px;
+  transition: text-decoration-color 0.15s;
+}
+.title-button:hover { text-decoration-color: var(--robin); }
+@media (prefers-reduced-motion: reduce) { .title-button { transition: none; } }
+.byline { font: italic 500 16px/1.3 var(--display); color: var(--ink-soft); }
+.trip {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.45;
+  color: var(--ink-soft);
+}
+/* A stretch of the route itself, as the map draws it. */
+.trip-line {
+  flex: none;
+  width: 22px;
+  height: 3px;
+  margin-top: 9px;
+  border-radius: 2px;
+  background: var(--robin);
+  box-shadow: 0 0 0 1.5px var(--shell), 0 0 0 2.5px var(--ink-faint);
+}
+
+.chapters {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  padding: 12px 24px;
+  background: var(--shell);
+  border-bottom: 1px solid var(--ink-faint);
+}
+.chapters .eyebrow { margin-right: 6px; }
+.chapter-tab {
+  min-width: 30px;
+  height: 30px;
+  padding: 0 8px;
+  border: 1px solid var(--ink-faint);
+  border-radius: 6px;
+  background: transparent;
+  font: 500 13px/1 var(--mono);
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+}
+.chapter-tab:hover { background: var(--shell-dim); }
+.chapter-tab[aria-pressed='true'] { background: var(--ink); border-color: var(--ink); color: var(--shell); }
+
+.chapter { padding: 18px 0 24px; }
+.chapter-head { display: grid; gap: 4px; padding: 0 24px 14px; }
+.chapter-head h2 { font: 700 21px/1.2 var(--display); text-wrap: balance; }
+.chapter-note { font-size: 14px; color: var(--ink-soft); }
+.chapter-empty { padding: 4px 24px; font-size: 14px; font-style: italic; color: var(--ink-soft); }
+
+.concepts { display: grid; }
+.concept {
+  --tint: color-mix(in srgb, var(--c) 9%, var(--shell));
+  /* Clear of the sticky chapter tabs when an opened concept scrolls to the top. */
+  scroll-margin-top: 56px;
+}
+.concept-head {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 34px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 24px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.concept-head:hover { background: var(--shell-dim); }
+.concept-head:focus-visible { outline-offset: -3px; }
+.concept.is-open .concept-head { background: var(--tint); }
+.concept-title { display: grid; font: 600 16px/1.25 var(--body); min-width: 0; }
+.concept.is-open .concept-title { color: color-mix(in srgb, var(--c) 78%, var(--ink)); }
+.concept-aka { font: italic 400 13px/1.35 var(--body); color: var(--ink-soft); }
+.concept-kind {
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+
+.swatch { justify-self: center; display: block; }
+.swatch-area {
+  width: 20px;
+  height: 14px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--c) 22%, transparent);
+  border: 1.5px dashed var(--c);
+}
+.swatch-line {
+  width: 22px;
+  height: 3px;
+  background: repeating-linear-gradient(90deg, var(--c) 0 6px, transparent 6px 9px);
+}
+.swatch-site {
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--c);
+  box-shadow: 0 0 0 2px var(--shell), 0 0 0 3px color-mix(in srgb, var(--c) 40%, transparent);
+}
+
+.concept-body {
+  display: grid;
+  gap: 12px;
+  padding: 6px 24px 20px 70px;
+  background: var(--tint);
+  font-size: 15px;
+  line-height: 1.6;
+}
+.concept-body p { max-width: 62ch; }
+.concept-legend,
+.concept-sources {
+  font: 400 12px/1.5 var(--mono);
+  color: var(--ink-soft);
+}
+.concept-legend { padding-top: 4px; border-top: 1px solid var(--ink-faint); }
+.concept-sources a { text-underline-offset: 2px; }
+
+/* ---------- pictures ---------- */
+
+.pic-open { display: block; padding: 0; border: 0; background: none; cursor: zoom-in; }
+.pic-open img { display: block; width: 100%; height: 100%; }
+.pic-open:focus-visible { outline-offset: 2px; }
+
+/* A person's portrait in the list, ringed in their colour. */
+.avatar {
+  justify-self: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  overflow: hidden;
+  box-shadow: 0 0 0 2px var(--shell), 0 0 0 3.5px var(--c);
+  background: var(--shell-dim);
+}
+.avatar img { width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
+
+.concept-figure { margin: 4px 0 2px; display: grid; gap: 6px; }
+.concept-figure .figure-pic { border-radius: 6px; overflow: hidden; background: var(--shell-dim); max-height: 260px; }
+.concept-figure .figure-pic img { object-fit: cover; max-height: 260px; }
+.concept-figure.is-portrait .figure-pic { justify-self: start; max-width: 200px; }
+.concept-figure.is-portrait .figure-pic img { object-fit: contain; height: auto; }
+.concept-figure figcaption,
+.pop-figure figcaption {
+  display: grid;
+  gap: 2px;
+  font: italic 400 13px/1.4 var(--body);
+  color: var(--ink-soft);
+}
+.credit { font: 400 11px/1.4 var(--mono); font-style: normal; color: var(--ink-soft); }
+.credit a, .pop-figure figcaption a, .lightbox-credit a { color: inherit; text-underline-offset: 2px; }
+.concept-thumbs { display: flex; flex-wrap: wrap; gap: 8px; }
+.concept-thumbs .thumb { width: 72px; height: 56px; border-radius: 4px; overflow: hidden; background: var(--shell-dim); }
+.concept-thumbs .thumb img { object-fit: cover; }
+
+.place-row { grid-template-columns: 22px 1fr auto; }
+.place-thumb { grid-column: 3; grid-row: 1 / span 2; align-self: center; width: 52px; height: 52px; object-fit: cover; border-radius: 6px; }
+
+.pop-figure { margin: -12px -14px 10px; display: grid; gap: 6px; }
+.pop-figure .pop-pic { border-radius: 8px 8px 0 0; overflow: hidden; max-height: 170px; background: var(--shell-dim); }
+.pop-figure .pop-pic img { object-fit: cover; max-height: 170px; }
+.pop-figure figcaption { padding: 0 14px; font-size: 12px; }
+
+.lightbox {
+  max-width: min(92vw, 1100px);
+  max-height: 92vh;
+  padding: 0;
+  border: 0;
+  border-radius: 10px;
+  background: var(--shell);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.lightbox::backdrop { background: rgba(21, 40, 46, 0.78); }
+.lightbox figure { margin: 0; display: grid; }
+.lightbox img { display: block; max-width: min(92vw, 1100px); max-height: calc(92vh - 72px); object-fit: contain; background: var(--ink); justify-self: center; }
+.lightbox figcaption { display: grid; gap: 2px; padding: 10px 16px 12px; }
+.lightbox-caption { font: italic 500 15px/1.4 var(--display); }
+.lightbox-credit { font: 400 11.5px/1.4 var(--mono); color: var(--ink-soft); }
+.lightbox-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 34px;
+  height: 34px;
+  border: 0;
+  border-radius: 50%;
+  background: color-mix(in srgb, var(--shell) 90%, transparent);
+  font: 400 22px/1 var(--body);
+  cursor: pointer;
+}
+
+/* Links between concepts: underlined in the target's own colour. */
+.xref {
+  color: inherit;
+  text-decoration: underline;
+  text-decoration-color: color-mix(in srgb, var(--c, var(--ink)) 70%, transparent);
+  text-decoration-thickness: 2px;
+  text-underline-offset: 3px;
+}
+.xref:hover { color: color-mix(in srgb, var(--c, var(--ink)) 80%, var(--ink)); text-decoration-thickness: 3px; }
+.xref-place { text-decoration-style: dotted; }
+.concept-links { font-size: 13px; line-height: 1.6; color: var(--ink-soft); }
+
+.places { display: grid; gap: 6px; padding: 18px 0 0; margin-top: 10px; border-top: 1px solid var(--ink-faint); }
+.places .eyebrow { padding: 0 24px; }
+.place-list { display: grid; }
+.place-row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 22px 1fr;
+  column-gap: 12px;
+  align-items: baseline;
+  padding: 7px 24px;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+.place-row:hover { background: var(--shell-dim); }
+.place-row:focus-visible { outline-offset: -3px; }
+.place-row.is-active { background: color-mix(in srgb, var(--ink) 6%, var(--shell)); }
+.place-pin {
+  justify-self: center;
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--ink-soft);
+  transform: translateY(1px);
+}
+.place-row.is-active .place-pin { border-color: var(--ink); background: var(--shell); box-shadow: 0 0 0 2px var(--shell), 0 0 0 3px var(--ink); }
+.place-name { font: 600 14.5px/1.3 var(--body); }
+.place-note { grid-column: 2; font-size: 13px; line-height: 1.45; color: var(--ink-soft); }
+
+.quotes { display: grid; gap: 14px; padding: 18px 24px 0; margin-top: 14px; border-top: 1px solid var(--ink-faint); }
+.quote { margin: 0; display: grid; gap: 6px; }
+.quote blockquote { margin: 0; padding-left: 16px; position: relative; }
+/* A hanging opening mark in robin, the route's colour: these are Olson's words. */
+.quote blockquote::before {
+  content: '“';
+  position: absolute;
+  left: -4px;
+  top: -6px;
+  font: 800 30px/1 var(--display);
+  color: var(--robin);
+}
+.quote p { font: italic 500 16px/1.55 var(--display); text-wrap: pretty; max-width: 60ch; }
+.quote figcaption { padding-left: 16px; font: 400 11.5px var(--mono); color: var(--ink-soft); letter-spacing: 0.04em; }
+
+/* ---------- map furniture ---------- */
+
+.zoom {
+  position: absolute;
+  z-index: 2;
+  right: max(var(--edge), env(safe-area-inset-right, 0px));
+  top: var(--edge);
+  display: flex;
+  flex-direction: column;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 6px 18px -8px rgba(21, 40, 46, 0.45);
+}
+.zoom button {
+  width: 38px;
+  height: 38px;
+  display: grid;
+  place-items: center;
+  border: 0;
+  border-bottom: 1px solid var(--ink-faint);
+  background: var(--shell);
+  font: 500 20px/1 var(--mono);
+  cursor: pointer;
+}
+.zoom button:last-child { border-bottom: 0; }
+.zoom button[aria-pressed='true'],
+.zoom button[aria-pressed='true']:hover { background: var(--ink); color: var(--shell); }
+.zoom button:hover { background: var(--shell-dim); }
+.zoom button:focus-visible { outline-offset: -3px; }
+.zoom svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+
+.readout {
+  position: absolute;
+  z-index: 2;
+  right: 150px;
+  bottom: 12px;
+  padding: 3px 8px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--shell) 88%, transparent);
+  font: 400 12px var(--mono);
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-soft);
+  pointer-events: none;
+}
+.readout:empty { display: none; }
+
+.maplibregl-ctrl-scale {
+  border-color: var(--ink-soft);
+  background: color-mix(in srgb, var(--shell) 80%, transparent);
+  font: 400 11px var(--mono);
+  color: var(--ink-soft);
+}
+.maplibregl-ctrl-attrib { font: 400 11px var(--body); }
+
+.maplibregl-popup-content {
+  padding: 12px 14px;
+  border-radius: 8px;
+  background: var(--shell);
+  box-shadow: var(--shadow);
+  font: 400 13.5px/1.5 var(--body);
+  color: var(--ink);
+}
+.maplibregl-popup-tip { border-top-color: var(--shell) !important; border-bottom-color: var(--shell) !important; }
+.maplibregl-popup-close-button {
+  z-index: 1;
+  font-size: 18px;
+  padding: 0 6px;
+  color: var(--ink-soft);
+  background: color-mix(in srgb, var(--shell) 85%, transparent);
+  border-radius: 0 8px 0 6px;
+}
+.pop-name { padding-right: 16px; font: 700 15px/1.3 var(--display); }
+.pop-year { margin-left: 8px; font: 400 12px var(--mono); color: var(--ink-soft); text-transform: capitalize; }
+.pop-note { margin-top: 4px; }
+
+/* ---------- phones: the panel is a sheet along the bottom ---------- */
+
+@media (max-width: 759px) {
+  :root { --edge: 12px; }
+  .panel {
+    left: 0;
+    right: 0;
+    top: auto;
+    bottom: 0;
+    width: auto;
+    max-height: 46%;
+    border-radius: 14px 14px 0 0;
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  .masthead { padding: 16px 16px 12px; }
+  .masthead h1 { font-size: 26px; }
+  .trip { display: none; }
+  .chapters { padding: 10px 16px; }
+  .chapter-head { padding: 0 16px 12px; }
+  .concept-head { padding: 11px 16px; }
+  .concept-body { padding: 4px 16px 18px 16px; }
+  .places .eyebrow { padding: 0 16px; }
+  .quotes { padding: 18px 16px 0; }
+  .place-row { padding: 7px 16px; }
+  .readout { display: none; }
+  .maplibregl-ctrl-bottom-right { bottom: 46%; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { scroll-behavior: auto !important; }
+}

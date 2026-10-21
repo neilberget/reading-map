@@ -1,0 +1,25 @@
+{
+  "name": "__SLUG__",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview",
+    "format": "prettier --write .",
+    "tiles": "node scripts/tiles.mjs",
+    "images": "node scripts/images.mjs"
+  },
+  "dependencies": {
+    "maplibre-gl": "6.12.0"
+  },
+  "devDependencies": {
+    "@mapbox/vector-tile": "3.0.0",
+    "@types/geojson": "^7946.0.16",
+    "pbf": "5.1.2",
+    "prettier": "^3.9.9",
+    "typescript": "^7.0.2",
+    "vite": "8.3.2"
+  }
+}

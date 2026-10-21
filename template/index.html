@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <title>Reading map</title>
+    <meta name="theme-color" content="#a9dad3" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <style>html, body { background: #a9dad3; }</style>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Besley:ital,wght@0,500;0,700;0,800;1,500&family=Libre+Franklin:ital,wght@0,400;0,500;0,600;1,400&family=IBM+Plex+Mono:wght@400;500&display=swap" />
+  </head>
+  <body>
+    <div class="app">
+      <div class="map" id="map"></div>
+
+      <aside class="panel" id="panel" aria-label="Reading notes">
+        <header class="masthead">
+          <p class="eyebrow">A reading map</p>
+          <h1><button type="button" class="title-button" id="book-title" title="Back to the whole route"></button></h1>
+          <p class="byline" id="book-byline"></p>
+          <p class="trip" id="book-tagline"></p>
+        </header>
+
+        <nav class="chapters" id="chapters" aria-label="Chapters"></nav>
+        <section class="chapter" id="chapter" aria-live="polite"></section>
+      </aside>
+
+      <p class="readout" id="readout" aria-hidden="true"></p>
+      <div class="zoom" role="group" aria-label="Map zoom">
+        <button type="button" id="zoom-in" aria-label="Zoom in">+</button>
+        <button type="button" id="zoom-out" aria-label="Zoom out">&minus;</button>
+        <button type="button" id="zoom-home" aria-label="Back to the route" title="Back to the route">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 6V2h4M14 6V2h-4M2 10v4h4M14 10v4h-4" /></svg>
+        </button>
+        <button type="button" id="satellite" aria-pressed="false" aria-label="Satellite view" title="Satellite view">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12v10H2zM2 11l3.5-3.5 2.5 2.5 2-2 4 3.5" /><circle cx="11" cy="6" r="1" /></svg>
+        </button>
+      </div>
+    </div>
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
