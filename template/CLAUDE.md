@@ -4,8 +4,21 @@ A reading companion for __AUTHOR__'s *__TITLE__* (__YEAR__): __ONE_LINE__. Neil 
 
 Follow the `reading-map` skill (`~/.claude/skills/reading-map/SKILL.md`) for adding concepts, places, quotes, landmarks and routes, for the accuracy rules, and for checking changes. `src/content/types.ts` is the content contract.
 
+## Where Neil is
+
+- Reading: (the chapter he's on).
+- Waiting on him: (anything he said he'd send, and questions to raise).
+
+## Chapters
+
+(One entry per chapter in book order: what it covers, what it brings back in `again`, its concepts and places. Colours go in the list below.)
+
 ## This book
 
 - Journey: __JOURNEY__ (or "none").
 - Groups and colours in use: (keep this list current as concepts are added).
-- Identifications and assumptions Neil hasn't confirmed: (list them, so they can be revisited).
+- How the author reads: (e.g. how far his distances can be trusted).
+
+## Identifications Neil hasn't confirmed
+
+(List them with the reasoning, so they can be revisited.)

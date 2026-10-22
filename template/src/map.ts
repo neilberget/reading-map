@@ -7,7 +7,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 import { picture, places, prose } from './content';
 import { landmarks } from './content/landmarks';
 import { waypointPictures } from './content/waypoints';
-import type { Concept, Icon, LonLat, PathStep, Pic, Place } from './content/types';
+import type { Concept, Icon, LonLat, OldMap, PathStep, Pic, Place } from './content/types';
 import { dms, middle, ring, smooth } from './geo';
 import { book } from './book';
 import { creditLine, pictureButton } from './lightbox';
@@ -114,7 +114,7 @@ export class ReadingMap {
     });
     this.map.touchZoomRotate.disableRotation();
     this.map.keyboard.disableRotation();
-    this.map.addControl(new ScaleControl({ unit: 'metric', maxWidth: 110 }), 'bottom-right');
+    this.map.addControl(new ScaleControl({ unit: book.units, maxWidth: 110 }), 'bottom-right');
 
     this.map.setMissingStyleImageResolver((id) => {
       if (id in SHAPES) this.map.addImage(id, drawIcon(id as Icon), { sdf: true, pixelRatio: ICON_RATIO });
@@ -219,10 +219,14 @@ export class ReadingMap {
       }
       let exact: LonLat[];
       if (step === 'route') {
+        // Turn the route to leave from the point before it, or, when it comes first, to arrive at the point after it.
+        const before = run[run.length - 1];
         const next = path[i + 1];
-        const before = run[run.length - 1] ?? (Array.isArray(next) ? next : undefined);
         const [start, end] = [this.route[0], this.route[this.route.length - 1]];
-        exact = before && end && near(before, end) < near(before, start) ? [...this.route].reverse() : this.route;
+        const flip = before
+          ? near(before, end) < near(before, start)
+          : Array.isArray(next) && near(next, start) < near(next, end);
+        exact = end && flip ? [...this.route].reverse() : this.route;
       } else {
         exact = step.traced;
       }
@@ -324,16 +328,58 @@ export class ReadingMap {
     }
   }
 
+  /**
+   * Lays a historical map over the land and water, under the overlays, route and labels; null takes it
+   * away. Only one at a time.
+   */
+  async setOldMap(old: OldMap | null, opacity: number) {
+    await this.ready;
+    if (this.map.getLayer('old-map')) this.map.removeLayer('old-map');
+    if (this.map.getSource('old-map')) this.map.removeSource('old-map');
+    if (!old) return;
+    const [w, s, e, n] = old.bounds ?? [-180, -85, 180, 85];
+    this.map.addSource(
+      'old-map',
+      old.tiles
+        ? { type: 'raster', tiles: [old.tiles], tileSize: 256, bounds: old.bounds, maxzoom: old.maxzoom ?? 18, attribution: old.credit }
+        : { type: 'image', url: `/${old.image}`, coordinates: [[w, n], [e, n], [e, s], [w, s]] },
+    );
+    const below = this.map.getStyle().layers.find((l) => l.id.startsWith('context'))?.id;
+    this.map.addLayer({ id: 'old-map', type: 'raster', source: 'old-map', paint: { 'raster-opacity': opacity } }, below);
+  }
+
+  /** Shows or hides the book's journey line and its stops, e.g. to read an old map underneath. */
+  async setRouteVisible(on: boolean) {
+    await this.ready;
+    for (const id of ['route-casing', 'route-line', 'route-stop']) {
+      if (this.map.getLayer(id)) this.map.setLayoutProperty(id, 'visibility', on ? 'visible' : 'none');
+    }
+  }
+
+  async setOldMapOpacity(opacity: number) {
+    await this.ready;
+    if (this.map.getLayer('old-map')) this.map.setPaintProperty('old-map', 'raster-opacity', opacity);
+  }
+
   /** Back to the whole journey, framed beside the panel; the book's setting when there is no route. */
   home(animate = true) {
     const bounds = this.route.length
       ? this.route.reduce((b, p) => b.extend(p), new LngLatBounds(this.route[0], this.route[0]))
       : new LngLatBounds(book.home);
+    this.fit(bounds, 9, animate);
+  }
+
+  /** Frames a chapter's stretch of country beside the panel. */
+  frame(view: [LonLat, LonLat], animate = true) {
+    this.fit(new LngLatBounds(view), 14, animate);
+  }
+
+  private fit(bounds: LngLatBounds, maxZoom: number, animate: boolean) {
     const pad = 36;
     const { top, right, bottom, left } = this.padding;
     this.map.fitBounds(bounds, {
       padding: { top: top + pad, right: right + pad, bottom: bottom + pad, left: left + pad },
-      maxZoom: 9,
+      maxZoom,
       duration: animate && !reducedMotion() ? 1400 : 0,
     });
   }

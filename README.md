@@ -24,7 +24,7 @@ Send things as you meet them, in as few words as you like. Claude decides what e
 
 **Concepts** are peoples, institutions, people, routes and events. Each gets a paragraph or two of context and a map overlay: a homeland, a territory, a set of sites or a route.
 
-> Some more from ch 1: North West Company, Hudson's Bay Company, George Simpson, Simon McGillivray
+> Some more from the introduction: North West Company, Hudson's Bay Company, George Simpson, Simon McGillivray
 
 > The author mentions the La Vérendrye route from Grand Portage to Fort Frances. Can you add it as a concept?
 
@@ -40,15 +40,15 @@ Send things as you meet them, in as few words as you like. Claude decides what e
 
 **Quotes** go in word for word, under the chapter:
 
-> ch1 quote by Omond Solandt: "I went along to iron out the wrinkles in my soul."
+> Intro quote by Omond Solandt: "I went along to iron out the wrinkles in my soul."
 
 **Landmarks** stay on the map at every zoom, so you can find your bearings:
 
 > Always show Île-à-la-Crosse and Cumberland House
 
-**Chapters** are added as you reach them. Claude asks for a chapter's title rather than guessing:
+**Chapters** are added as you reach them, along with an introduction, prologue or epilogue if the book has one. Claude asks for a chapter's title rather than guessing:
 
-> Chapter 1 is just called "The Lonely Land"
+> Chapter 1 is called "Île-à-la-Crosse"
 
 **Pictures** come from Wikimedia Commons, checked to show what they claim, with credits:
 

@@ -5,7 +5,10 @@ export type LonLat = [number, number];
  * their credit and licence (src/content/images.json). Neil's own photos go in public/images/own/.
  */
 export interface Pic {
-  /** The Wikimedia file name, without "File:"; or, with `own`, a file name in public/images/own/. */
+  /**
+   * The Wikimedia file name, without "File:"; with `own`, a file name in public/images/own/; with `url`,
+   * a short name of your choosing to file it under.
+   */
   file: string;
   /** What it shows, with a date: "Sir George Simpson, about 1857". Artworks: “Title” by Artist, year. */
   caption: string;
@@ -15,8 +18,16 @@ export interface Pic {
   own?: boolean;
   /** A head-and-shoulders portrait: also shown round beside the name in the chapter list. */
   portrait?: boolean;
-  /** Overrides the credit from Wikimedia when its metadata is unusable. */
+  /** Overrides the credit: Wikimedia's when its metadata is unusable, or “Neil” on an `own` photo someone else took. Required with `url`. */
   credit?: string;
+  /**
+   * A photo from elsewhere on the web, for a map kept private: the direct image address. `npm run images`
+   * saves a copy in public/images/web/. Give `page` and `credit` with it. A path under public/ instead
+   * (e.g. "images/web/patuanak-1982.jpg") uses a copy already saved there, such as a crop.
+   */
+  url?: string;
+  /** With `url`: the page the photo appears on, linked from its credit. */
+  page?: string;
 }
 
 /** A marker drawn for a concept: a mission, a post, a portage. */
@@ -108,13 +119,53 @@ export interface Quote {
 }
 
 export interface Chapter {
-  number: number;
+  /** Left out for an introduction, prologue or epilogue, which go by their title alone. */
+  number?: number;
+  /** As the book prints it: "Île-à-la-Crosse", or "Introduction". */
   title: string;
   /** One line on what the chapter covers. */
   note?: string;
+  /**
+   * Where the chapter happens, as [south-west, north-east] corners: opening the chapter frames it.
+   * Left out (an introduction, a chapter that ranges widely), the map stays where it is.
+   */
+  view?: [LonLat, LonLat];
   concepts: Concept[];
+  /**
+   * Ids of concepts or places from earlier chapters that come up again here. They are listed after
+   * this chapter's own and open here, without leaving the chapter; each stays in its first chapter.
+   */
+  again?: string[];
   places?: Place[];
   quotes?: Quote[];
+}
+
+/**
+ * A historical map that can be laid over the land and water from the old-maps button: either web tiles
+ * already georeferenced, or an image in public/oldmaps/ warped to web mercator by `npm run oldmap`
+ * (`scripts/oldmap.mjs` explains the control points).
+ */
+export interface OldMap {
+  id: string;
+  /** In the menu: "Arrowsmith, 1857". */
+  name: string;
+  /** One line on what it shows and why it's worth a look. */
+  note?: string;
+  /** A present-day map (a topographic one, say) rather than a historical one: listed first, under Today. */
+  today?: boolean;
+  /** Laid over the land from the first visit, until the reader picks another map or None. One at most. */
+  default?: boolean;
+  /** Maker and holder: "John Arrowsmith; David Rumsey Map Collection". */
+  credit: string;
+  /** The map's own page, linked from the menu. */
+  page?: string;
+  /** An XYZ tile template for a map someone has already georeferenced; a WMS works too, with {bbox-epsg-3857}. */
+  tiles?: string;
+  /** Or a warped image's path under public/, e.g. "oldmaps/arrowsmith-1857.jpg". */
+  image?: string;
+  /** [west, south, east, north]: the image's corners, or where the tiles exist. */
+  bounds?: [number, number, number, number];
+  maxzoom?: number;
 }
 
 /** A place always marked on the map, so the reader can find their bearings at any zoom. */

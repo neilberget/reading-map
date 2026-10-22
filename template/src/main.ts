@@ -1,5 +1,6 @@
 import type { FeatureCollection } from 'geojson';
-import { backlinks, chapters, concepts, picture, places, prose, type Picture } from './content';
+import { backlinks, chapters, concepts, listed, listedPlaces, picture, places, prose, type Picture } from './content';
+import { oldMaps } from './content/oldmaps';
 import type { Chapter, Concept } from './content/types';
 import { book } from './book';
 import { creditLine, pictureButton } from './lightbox';
@@ -13,9 +14,12 @@ const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').match
 const STORE = 'lonely-land';
 interface Saved {
   view?: { center: [number, number]; zoom: number };
-  chapter?: number;
+  chapter?: number | string;
   concept?: string | null;
   satellite?: boolean;
+  oldMap?: string | null;
+  oldMapOpacity?: number;
+  hideRoute?: boolean;
 }
 function load(): Saved {
   try {
@@ -68,7 +72,83 @@ function setSatellite(on: boolean) {
 $('satellite').addEventListener('click', () => setSatellite($('satellite').getAttribute('aria-pressed') !== 'true'));
 if (saved.satellite) setSatellite(true);
 
-let chapter: Chapter = chapters.find((c) => c.number === saved.chapter) ?? chapters[0];
+/** The old-maps button: a short menu of historical maps to lay over the land, and how strongly. */
+let oldMap: string | null = null;
+let oldMapOpacity = saved.oldMapOpacity ?? 0.85;
+let hideRoute = saved.hideRoute ?? false;
+function setOldMap(id: string | null) {
+  oldMap = oldMaps.some((m) => m.id === id) ? id : null;
+  $('old-maps').setAttribute('aria-pressed', String(!!oldMap));
+  void reader.setOldMap(oldMaps.find((m) => m.id === oldMap) ?? null, oldMapOpacity);
+  save({ oldMap });
+  renderOldMaps();
+}
+function renderOldMaps() {
+  const menu = $('old-maps-menu');
+  menu.replaceChildren(el('p', 'eyebrow', 'Maps'));
+  const list = el('ul', 'old-maps-list');
+  const today = oldMaps.filter((m) => m.today), old = oldMaps.filter((m) => !m.today);
+  const heading = (text: string) => list.append(el('li', 'old-maps-heading eyebrow', text));
+  for (const m of [null, ...today, ...old]) {
+    if (m && today.length && m === today[0]) heading('Today');
+    if (m && today.length && m === old[0]) heading('Old maps');
+    const item = el('li');
+    const label = el('label');
+    const radio = Object.assign(document.createElement('input'), { type: 'radio', name: 'old-map', checked: (m?.id ?? null) === oldMap });
+    radio.addEventListener('change', () => setOldMap(m?.id ?? null));
+    label.append(radio, el('span', 'old-map-name', m ? prose(m.name) : 'None'));
+    item.append(label);
+    if (m?.note) item.append(el('p', 'old-map-note', prose(m.note)));
+    if (m) {
+      const credit = el('p', 'old-map-credit', prose(m.credit));
+      if (m.page) {
+        const a = Object.assign(document.createElement('a'), { href: m.page, target: '_blank', rel: 'noopener', textContent: 'Source' });
+        credit.append(' · ', a);
+      }
+      item.append(credit);
+    }
+    list.append(item);
+  }
+  const fade = el('label', 'old-map-opacity', 'Strength');
+  const range = Object.assign(document.createElement('input'), { type: 'range', min: '0.2', max: '1', step: '0.05', value: String(oldMapOpacity) });
+  range.addEventListener('input', () => {
+    oldMapOpacity = Number(range.value);
+    void reader.setOldMapOpacity(oldMapOpacity);
+    save({ oldMapOpacity });
+  });
+  fade.append(range);
+  const route = el('label', 'old-map-route');
+  const box = Object.assign(document.createElement('input'), { type: 'checkbox', checked: !hideRoute });
+  box.addEventListener('change', () => {
+    hideRoute = !box.checked;
+    void reader.setRouteVisible(!hideRoute);
+    save({ hideRoute });
+  });
+  route.append(box, document.createTextNode(' Show the route'));
+  menu.append(list, fade, route);
+}
+function toggleOldMapsMenu(open = $('old-maps-menu').hidden) {
+  $('old-maps-menu').hidden = !open;
+  $('old-maps').setAttribute('aria-expanded', String(open));
+}
+if (oldMaps.length) {
+  $('old-maps').hidden = false;
+  $('old-maps').addEventListener('click', () => toggleOldMapsMenu());
+  document.addEventListener('keydown', (e) => e.key === 'Escape' && toggleOldMapsMenu(false));
+  document.addEventListener('click', (e) => {
+    const t = e.target as Element;
+    if (!t.closest('#old-maps, #old-maps-menu')) toggleOldMapsMenu(false);
+  });
+  // A reader's own choice, None included, wins over the book's default map.
+  setOldMap(saved.oldMap !== undefined ? saved.oldMap : (oldMaps.find((m) => m.default)?.id ?? null));
+  if (hideRoute) void reader.setRouteVisible(false);
+}
+
+/** A chapter's number, or the title of an unnumbered one such as the introduction. */
+const chapterKey = (c: Chapter) => c.number ?? c.title;
+const chapterName = (c: Chapter) => (c.number === undefined ? c.title : `Chapter ${c.number}`);
+
+let chapter: Chapter = chapters.find((c) => chapterKey(c) === saved.chapter) ?? chapters[0];
 let open: string | null = null;
 
 function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, html?: string) {
@@ -81,7 +161,9 @@ function el<K extends keyof HTMLElementTagNameMap>(tag: K, cls?: string, html?: 
 /** What a concept puts on the map, in a few words, for the line under its text. */
 function legend(c: Concept) {
   const parts: string[] = [];
-  if (c.areas?.length) parts.push(c.areas.length === 1 ? 'approximate homeland' : `${c.areas.length} approximate homelands`);
+  if (c.areas?.length && c.kind === 'People')
+    parts.push(c.areas.length === 1 ? 'approximate homeland' : `${c.areas.length} approximate homelands`);
+  else if (c.areas?.length) parts.push([...new Set(c.areas.map((a) => a.name))].join(', '));
   if (c.lines?.length) parts.push(c.lines.map((l) => l.name).join(', '));
   if (c.sites?.length) parts.push(`${c.sites.length} places`);
   return parts.join(' · ');
@@ -97,7 +179,8 @@ function swatch(c: Concept) {
 
 /** A person's portrait, round, in place of the swatch; otherwise the swatch. */
 function marker(c: Concept) {
-  const pic = c.images?.[0]?.portrait ? picture(c.images[0]) : null;
+  // A people's homeland keeps its swatch even when its first picture is a portrait of one person.
+  const pic = c.images?.[0]?.portrait && !c.areas?.length ? picture(c.images[0]) : null;
   if (!pic) return swatch(c);
   const a = el('span', 'avatar');
   a.style.setProperty('--c', c.color);
@@ -120,13 +203,13 @@ function figures(c: Concept) {
 }
 
 function neighbours(c: Concept) {
-  return c.group ? chapter.concepts.filter((o) => o.group === c.group && o.id !== c.id) : [];
+  return c.group ? listed(chapter).filter((o) => o.group === c.group && o.id !== c.id) : [];
 }
 
 function setChapter(next: Chapter) {
   if (next === chapter && $('chapter').childElementCount) return;
   chapter = next;
-  save({ chapter: next.number });
+  save({ chapter: chapterKey(next) });
   renderChapters();
   renderChapter();
 }
@@ -161,13 +244,14 @@ function pin(id: string | null) {
 function go(id: string | null, { fly = true, push = true } = {}) {
   const place = id ? places.get(id) : undefined;
   if (place) {
-    setChapter(place.chapter);
+    if (!listedPlaces(chapter).includes(place.place)) setChapter(place.chapter);
     pin(place.place.id);
     return;
   }
   const target = id ? concepts.get(id) : undefined;
   if (id && !target) return;
-  if (target) setChapter(target.chapter);
+  // A concept the open chapter brings back opens here; any other takes the reader to its own chapter.
+  if (target && !listed(chapter).includes(target.concept)) setChapter(target.chapter);
   select(target ? id : null, fly);
   const hash = target ? `#${id}` : '';
   if (push && location.hash !== hash) history.pushState(null, '', hash || location.pathname);
@@ -183,16 +267,17 @@ $('book-title').addEventListener('click', () => {
 
 function renderChapters() {
   const nav = $('chapters');
-  nav.replaceChildren(el('span', 'eyebrow', 'Chapter'));
+  nav.replaceChildren(el('span', 'eyebrow', 'Contents'));
   for (const c of chapters) {
-    const b = el('button', 'chapter-tab', String(c.number));
+    const b = el('button', 'chapter-tab', String(chapterKey(c)));
     b.type = 'button';
     b.setAttribute('aria-pressed', String(c === chapter));
     b.title = c.title;
-    b.setAttribute('aria-label', `Chapter ${c.number}: ${c.title}`);
+    b.setAttribute('aria-label', c.number === undefined ? c.title : `Chapter ${c.number}: ${c.title}`);
     b.addEventListener('click', () => {
       setChapter(c);
       go(null);
+      if (c.view) reader.frame(c.view);
     });
     nav.append(b);
   }
@@ -214,11 +299,13 @@ function linkList(label: string, items: Concept[]) {
 function renderChapter() {
   const section = $('chapter');
   const head = el('header', 'chapter-head');
-  head.append(el('p', 'eyebrow', `Chapter ${chapter.number}`), el('h2', '', prose(chapter.title)));
+  if (chapter.number !== undefined) head.append(el('p', 'eyebrow', `Chapter ${chapter.number}`));
+  head.append(el('h2', '', prose(chapter.title)));
   if (chapter.note) head.append(el('p', 'chapter-note', prose(chapter.note)));
 
   const list = el('ul', 'concepts');
-  for (const c of chapter.concepts) {
+  const shownHere = listed(chapter);
+  for (const c of shownHere) {
     const item = el('li', 'concept');
     item.dataset.id = c.id;
     item.style.setProperty('--c', c.color);
@@ -236,6 +323,11 @@ function renderChapter() {
     body.hidden = true;
     body.append(...figures(c));
     for (const p of c.body) body.append(el('p', '', prose(p)));
+    const home = concepts.get(c.id)!.chapter;
+    if (home !== chapter) {
+      const where = home.number === undefined ? `the ${home.title}` : `chapter ${home.number}`;
+      body.append(el('p', 'concept-legend', `First named in ${prose(where)}.`));
+    }
     const shown = legend(c);
     if (shown) body.append(el('p', 'concept-legend', `On the map: ${prose(shown)}`));
     const from = backlinks.get(c.id);
@@ -256,15 +348,16 @@ function renderChapter() {
     list.append(item);
   }
   section.replaceChildren(head, list);
-  if (!chapter.concepts.length && !chapter.places?.length && !chapter.quotes?.length) {
+  const placesHere = listedPlaces(chapter);
+  if (!shownHere.length && !placesHere.length && !chapter.quotes?.length) {
     section.append(el('p', 'chapter-empty', 'Nothing from this chapter yet. Name things as you read and they will appear here.'));
   }
 
-  if (chapter.places?.length) {
+  if (placesHere.length) {
     const block = el('section', 'places');
     block.append(el('h3', 'eyebrow', 'Places'));
     const rows = el('ul', 'place-list');
-    for (const p of chapter.places) {
+    for (const p of placesHere) {
       const row = el('li');
       const b = el('button', 'place-row');
       b.type = 'button';
@@ -290,7 +383,7 @@ function renderChapter() {
       fig.append(el('blockquote', '', `<p>${prose(q.text)}</p>`));
       const parts = [
         ...(q.by ? [`— ${prose(q.by)}`] : []),
-        q.page ? `p. ${prose(q.page)}` : `Chapter ${chapter.number}`,
+        q.page ? `p. ${prose(q.page)}` : chapterName(chapter),
         ...(q.about ? [`on ${prose(`[[${q.about}]]`)}`] : []),
       ];
       fig.append(el('figcaption', '', parts.join(' · ')));
@@ -317,7 +410,10 @@ void (book.route ? fetch(book.route) : Promise.reject())
   .catch(() => null)
   .then(async (route) => {
     if (route) await reader.setRoute(route);
-    if (!saved.view) reader.home(false);
+    if (!saved.view) {
+      if (chapter.view) reader.frame(chapter.view, false);
+      else reader.home(false);
+    }
     // A link with #concept wins; otherwise reopen what was open, keeping the restored view.
     const linked = location.hash.slice(1);
     if (linked && (concepts.has(linked) || places.has(linked))) go(linked, { push: false });

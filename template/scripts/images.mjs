@@ -6,7 +6,9 @@
 //   npm run images -- --all   fetch everything again
 //
 // A picture is any object in src/content/ with a `file:` (plus `wiki: 'en'` for an English Wikipedia
-// file); `own: true` pictures are Neil's, already in public/images/own/, and are skipped.
+// file); `own: true` pictures are Neil's, already in public/images/own/, and are skipped. One with a
+// `url:` comes from elsewhere on the web: it is saved in public/images/web/, credited to its `credit:`
+// and linked to its `page:`.
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -29,7 +31,13 @@ async function get(url) {
   }
 }
 
-/** Every { file: '…', wiki?, own? } object literal in the content files. */
+/** A string field in an object literal's text, unescaped: `url: '…'` gives the …. */
+const field = (obj, key) => {
+  const m = obj.match(new RegExp(`\\b${key}:\\s*(?:'((?:[^'\\\\]|\\\\.)*)'|"((?:[^"\\\\]|\\\\.)*)")`));
+  return m ? (m[1] ?? m[2]).replace(/\\(.)/g, '$1') : undefined;
+};
+
+/** Every { file: '…', wiki?, own?, url? } object literal in the content files. */
 function wanted() {
   const found = new Map();
   const walk = (dir) => {
@@ -41,9 +49,11 @@ function wanted() {
         const re = /file:\s*(?:'((?:[^'\\]|\\.)*)'|"((?:[^"\\]|\\.)*)")/g;
         for (const m of text.matchAll(re)) {
           const file = (m[1] ?? m[2]).replace(/\\(.)/g, '$1');
-          const rest = text.slice(m.index, text.indexOf('}', m.index));
-          if (/own:\s*true/.test(rest)) continue;
-          found.set(file, /wiki:\s*'en'/.test(rest) ? 'en' : 'commons');
+          const obj = text.slice(text.lastIndexOf('{', m.index), text.indexOf('}', m.index));
+          if (/own:\s*true/.test(obj)) continue;
+          const url = field(obj, 'url');
+          if (url) found.set(file, { url, page: field(obj, 'page'), credit: field(obj, 'credit') });
+          else found.set(file, /wiki:\s*'en'/.test(obj) ? 'en' : 'commons');
         }
       }
     }
@@ -102,6 +112,48 @@ async function info(file, wiki) {
   };
 }
 
+/** Width and height from a PNG, GIF, JPEG or WebP file's header. */
+function dimensions(b) {
+  if (b.readUInt32BE(0) === 0x89504e47) return [b.readUInt32BE(16), b.readUInt32BE(20)];
+  if (b.toString('ascii', 0, 3) === 'GIF') return [b.readUInt16LE(6), b.readUInt16LE(8)];
+  if (b.toString('ascii', 8, 12) === 'WEBP') {
+    const kind = b.toString('ascii', 12, 16);
+    if (kind === 'VP8 ') return [b.readUInt16LE(26) & 0x3fff, b.readUInt16LE(28) & 0x3fff];
+    if (kind === 'VP8L') {
+      const n = b.readUInt32LE(21);
+      return [(n & 0x3fff) + 1, ((n >> 14) & 0x3fff) + 1];
+    }
+    return [1 + b.readUIntLE(24, 3), 1 + b.readUIntLE(27, 3)];
+  }
+  for (let i = 2; i + 9 < b.length; ) {
+    if (b[i] !== 0xff) return [];
+    const marker = b[i + 1];
+    if (marker >= 0xc0 && marker <= 0xcf && ![0xc4, 0xc8, 0xcc].includes(marker))
+      return [b.readUInt16BE(i + 7), b.readUInt16BE(i + 5)];
+    i += 2 + b.readUInt16BE(i + 2);
+  }
+  return [];
+}
+
+/** A photo from elsewhere on the web, saved as it is; or, with a path under public/, a copy already saved (a crop). */
+async function fromWeb(file, { url, page, credit }) {
+  if (!/^https?:/.test(url)) {
+    const [width, height] = dimensions(fs.readFileSync(path.join(ROOT, 'public', url)));
+    const site = page ? new URL(page).hostname.replace(/^www\./, '') : 'Saved copy';
+    return { src: url, width, height, credit: credit ?? site, license: site, page };
+  }
+  const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh) reading-map/0.1' } });
+  if (!res.ok) throw new Error(`${file}: download HTTP ${res.status}`);
+  const body = Buffer.from(await res.arrayBuffer());
+  const ext = (url.match(/\.(jpe?g|png|gif|webp)(?:$|[?#])/i)?.[1] ?? 'jpg').toLowerCase().replace('jpeg', 'jpg');
+  const name = `${slug(file)}.${ext}`;
+  fs.mkdirSync(path.join(OUT, 'web'), { recursive: true });
+  fs.writeFileSync(path.join(OUT, 'web', name), body);
+  const [width, height] = dimensions(body);
+  const site = new URL(page ?? url).hostname.replace(/^www\./, '');
+  return { src: `images/web/${name}`, width, height, credit: credit ?? site, license: site, page: page ?? url };
+}
+
 const manifest = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : {};
 fs.mkdirSync(OUT, { recursive: true });
 const files = wanted();
@@ -109,6 +161,12 @@ let fetched = 0;
 for (const [file, wiki] of files) {
   if (!all && manifest[file] && fs.existsSync(path.join(ROOT, 'public', manifest[file].src))) continue;
   try {
+    if (typeof wiki === 'object') {
+      manifest[file] = await fromWeb(file, wiki);
+      fetched++;
+      console.log(`✓ ${file}  (${manifest[file].license}; ${manifest[file].credit})`);
+      continue;
+    }
     const i = await info(file, wiki);
     const ext = (i.url.match(/\.(jpe?g|png|gif|webp|tiff?)(?:$|\?)/i)?.[1] ?? 'jpg').toLowerCase().replace('jpeg', 'jpg');
     const name = `${slug(file)}.${ext.startsWith('tif') ? 'jpg' : ext}`;

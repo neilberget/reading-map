@@ -37,7 +37,11 @@
         <button type="button" id="satellite" aria-pressed="false" aria-label="Satellite view" title="Satellite view">
           <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3h12v10H2zM2 11l3.5-3.5 2.5 2.5 2-2 4 3.5" /><circle cx="11" cy="6" r="1" /></svg>
         </button>
+        <button type="button" id="old-maps" aria-pressed="false" aria-expanded="false" aria-controls="old-maps-menu" aria-label="Maps" title="Maps: topographic and historical" hidden>
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M1.5 4 5.5 2.5l5 1.5 4-1.5v9.5l-4 1.5-5-1.5-4 1.5zM5.5 2.5V12M10.5 4v9.5" /></svg>
+        </button>
       </div>
+      <div class="old-maps-menu" id="old-maps-menu" role="dialog" aria-label="Maps" hidden></div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

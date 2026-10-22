@@ -17,4 +17,6 @@ export const book = {
    * Points. Drawn in robin orange at every zoom. null for a book without a single route.
    */
   route: null as string | null,
+  /** The scale bar's units: the book's own, so its distances read straight off the map. */
+  units: 'metric' as 'imperial' | 'metric',
 };

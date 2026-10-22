@@ -9,7 +9,10 @@
     "preview": "vite preview",
     "format": "prettier --write .",
     "tiles": "node scripts/tiles.mjs",
-    "images": "node scripts/images.mjs"
+    "images": "node scripts/images.mjs",
+    "oldmap": "node scripts/oldmap.mjs",
+    "along": "node scripts/along.mjs",
+    "shot": "node scripts/shot.mjs"
   },
   "dependencies": {
     "maplibre-gl": "6.12.0"
