@@ -2,11 +2,12 @@
 // A screenshot of the running dev map, for checking a new overlay, or a guessed spot against the
 // satellite or a topographic map. It sets what the page restores on load (view, chapter, open concept or
 // place, satellite, a map from the Maps menu), then can drop red labelled crosses on candidate points.
-// Needs `npm run dev` running, Google Chrome, and puppeteer-core (borrowed from ~/Projects/geo-bird).
+// Needs the library's server running (`npm run dev` in ~/Projects/reading-maps), Google Chrome, and
+// puppeteer-core (borrowed from ~/Projects/geo-bird).
 //   npm run shot -- <out.png> [--at lon,lat] [--zoom 12] [--chapter 3] [--open <id>] [--sat] [--map <old map id>]
 //     [--no-route] [--no-panel] [--mark "name:lon,lat"]...
 //   npm run shot -- camp.png --at -107.71,55.94 --zoom 13 --sat --no-panel --mark "camp:-107.7105,55.9378"
-import fs from 'node:fs';
+import path from 'node:path';
 import os from 'node:os';
 import { createRequire } from 'node:module';
 
@@ -18,8 +19,8 @@ const marks = a.flatMap((x, i) => (a[i - 1] === '--mark' ? [x] : [])).map((m) =>
   const [n, ll] = m.split(':');
   return [n, ...ll.split(',').map(Number)];
 });
-const port = fs.readFileSync('vite.config.ts', 'utf8').match(/server:\s*{\s*port:\s*(\d+)/)[1];
-const store = fs.readFileSync('src/main.ts', 'utf8').match(/const STORE = '([^']+)'/)[1];
+// The library serves this book under its folder's name.
+const url = `http://localhost:5179/${path.basename(process.cwd())}/`;
 
 const at = opt('--at')?.split(',').map(Number), chapter = opt('--chapter');
 const saved = {
@@ -39,8 +40,8 @@ const browser = await puppeteer.launch({
 });
 const page = await browser.newPage();
 await page.setViewport({ width: 1400, height: 900 });
-await page.goto(`http://localhost:${port}`, { waitUntil: 'networkidle2' });
-await page.evaluate((k, v) => { localStorage.clear(); localStorage.setItem(k, v); }, store, JSON.stringify(saved));
+await page.goto(url, { waitUntil: 'networkidle2' });
+await page.evaluate((v) => { localStorage.clear(); localStorage.setItem(window.__store, v); }, JSON.stringify(saved));
 await page.reload({ waitUntil: 'networkidle2' });
 await new Promise((r) => setTimeout(r, tiles ? 9000 : 3500));
 if (a.includes('--no-panel')) {

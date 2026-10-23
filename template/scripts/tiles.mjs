@@ -46,9 +46,21 @@ const [W, S, E, N] = bbox;
 
 // ---------- tiles ----------
 
+/** fetch, retried a few times: the tile server sometimes resets the connection. */
+async function get(url) {
+  for (let tries = 1; ; tries++) {
+    try {
+      return await fetch(url);
+    } catch (err) {
+      if (tries === 5) throw err;
+      await new Promise((r) => setTimeout(r, 1000 * tries));
+    }
+  }
+}
+
 let template;
 async function tileUrl(z, x, y) {
-  template ??= (await (await fetch('https://tiles.openfreemap.org/planet')).json()).tiles[0];
+  template ??= (await (await get('https://tiles.openfreemap.org/planet')).json()).tiles[0];
   return template.replace('{z}', z).replace('{x}', x).replace('{y}', y);
 }
 const tx = (lon, z) => Math.floor(((lon + 180) / 360) * 2 ** z);
@@ -67,7 +79,7 @@ async function* tiles(z) {
     for (let y = ty(N, z); y <= ty(S, z); y++) {
       const file = path.join(CACHE, `${z}-${x}-${y}.pbf`);
       if (!fs.existsSync(file)) {
-        const res = await fetch(await tileUrl(z, x, y));
+        const res = await get(await tileUrl(z, x, y));
         if (!res.ok) throw new Error(`tile ${z}/${x}/${y}: HTTP ${res.status}`);
         fs.writeFileSync(file, Buffer.from(await res.arrayBuffer()));
       }

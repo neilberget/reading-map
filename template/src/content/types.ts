@@ -3,6 +3,7 @@ export type LonLat = [number, number];
 /**
  * A picture. Wikimedia files are fetched by `npm run images`, which saves them in public/images/ with
  * their credit and licence (src/content/images.json). Neil's own photos go in public/images/own/.
+ * `npm run images` reads the source text, so write each field as a string literal, not a variable.
  */
 export interface Pic {
   /**
@@ -28,6 +29,12 @@ export interface Pic {
   url?: string;
   /** With `url`: the page the photo appears on, linked from its credit. */
   page?: string;
+  /**
+   * With `url` or `own`: the licence, when it lets anyone see the picture ('Public domain', 'CC BY 4.0').
+   * Wikimedia pictures get theirs from `npm run images`. On the website a picture without a free licence
+   * shows only to readers signed in with an account Neil has flagged.
+   */
+  license?: string;
 }
 
 /** A marker drawn for a concept: a mission, a post, a portage. */
@@ -166,6 +173,8 @@ export interface OldMap {
   /** [west, south, east, north]: the image's corners, or where the tiles exist. */
   bounds?: [number, number, number, number];
   maxzoom?: number;
+  /** Tiles that only exist close in (a server that returns nothing further out): hidden below this zoom. */
+  minzoom?: number;
 }
 
 /** A place always marked on the map, so the reader can find their bearings at any zoom. */

@@ -4,7 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css';
 // Bundled by Vite with the shared module it imports; left to itself, MapLibre's worker loses that
 // module in a production build and the map never draws.
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
-import { picture, places, prose } from './content';
+import { asset, picture, places, prose } from './content';
 import { landmarks } from './content/landmarks';
 import { waypointPictures } from './content/waypoints';
 import type { Concept, Icon, LonLat, OldMap, PathStep, Pic, Place } from './content/types';
@@ -341,11 +341,11 @@ export class ReadingMap {
     this.map.addSource(
       'old-map',
       old.tiles
-        ? { type: 'raster', tiles: [old.tiles], tileSize: 256, bounds: old.bounds, maxzoom: old.maxzoom ?? 18, attribution: old.credit }
-        : { type: 'image', url: `/${old.image}`, coordinates: [[w, n], [e, n], [e, s], [w, s]] },
+        ? { type: 'raster', tiles: [old.tiles], tileSize: 256, bounds: old.bounds, minzoom: old.minzoom ?? 0, maxzoom: old.maxzoom ?? 18, attribution: old.credit }
+        : { type: 'image', url: asset(old.image!), coordinates: [[w, n], [e, n], [e, s], [w, s]] },
     );
     const below = this.map.getStyle().layers.find((l) => l.id.startsWith('context'))?.id;
-    this.map.addLayer({ id: 'old-map', type: 'raster', source: 'old-map', paint: { 'raster-opacity': opacity } }, below);
+    this.map.addLayer({ id: 'old-map', type: 'raster', source: 'old-map', minzoom: old.minzoom ?? 0, paint: { 'raster-opacity': opacity } }, below);
   }
 
   /** Shows or hides the book's journey line and its stops, e.g. to read an old map underneath. */

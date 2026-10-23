@@ -1,5 +1,5 @@
 import type { FeatureCollection } from 'geojson';
-import { backlinks, chapters, concepts, listed, listedPlaces, picture, places, prose, type Picture } from './content';
+import { asset, backlinks, chapters, checkAccess, concepts, listed, listedPlaces, picture, places, prose, type Picture } from './content';
 import { oldMaps } from './content/oldmaps';
 import type { Chapter, Concept } from './content/types';
 import { book } from './book';
@@ -10,8 +10,11 @@ import './styles.css';
 const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
 const reducedMotion = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/** Where the reader left off: the map view, the chapter and the open concept survive a reload. */
-const STORE = 'lonely-land';
+/**
+ * Where the reader left off: the map view, the chapter and the open concept survive a reload. Keyed by the
+ * book's path, since every book in the library shares one address and so one localStorage.
+ */
+const STORE = `reading-map:${import.meta.env.BASE_URL}`;
 interface Saved {
   view?: { center: [number, number]; zoom: number };
   chapter?: number | string;
@@ -44,7 +47,7 @@ if (book.route) $('book-tagline').prepend(Object.assign(document.createElement('
 
 const saved = load();
 const reader = new ReadingMap($('map'), $('readout'), saved.view);
-if (import.meta.env.DEV) Object.assign(window, { __map: reader.map });
+if (import.meta.env.DEV) Object.assign(window, { __map: reader.map, __store: STORE });
 const panel = $('panel');
 const wide = matchMedia('(min-width: 760px)');
 
@@ -402,10 +405,11 @@ document.addEventListener('click', (e) => {
 });
 window.addEventListener('popstate', () => go(location.hash.slice(1) || null, { push: false }));
 
+await checkAccess();
 renderChapters();
 renderChapter();
 
-void (book.route ? fetch(book.route) : Promise.reject())
+void (book.route ? fetch(asset(book.route)) : Promise.reject())
   .then((r) => (r.ok ? (r.json() as Promise<FeatureCollection>) : null))
   .catch(() => null)
   .then(async (route) => {

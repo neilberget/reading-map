@@ -1,7 +1,7 @@
 import type { Feature, FeatureCollection } from 'geojson';
 import type { ExpressionSpecification, GeoJSONSourceSpecification, StyleSpecification } from 'maplibre-gl';
 
-/** Flyway's palette (../geo-bird): robin's-egg water, eggshell land, ink lines. */
+/** Flyway's palette (~/Projects/geo-bird): robin's-egg water, eggshell land, ink lines. */
 export const ink = '#15282e';
 export const inkSoft = '#4a636b';
 export const shell = '#fffcf5';

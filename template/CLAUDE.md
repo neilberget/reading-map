@@ -1,6 +1,6 @@
 # __TITLE__: a reading map
 
-A reading companion for __AUTHOR__'s *__TITLE__* (__YEAR__): __ONE_LINE__. Neil names things as he reads and they go on the map. Local only: `npm run dev` serves it at http://localhost:__PORT__. Nothing is deployed.
+A reading companion for __AUTHOR__'s *__TITLE__* (__YEAR__): __ONE_LINE__. Neil names things as he reads and they go on the map. The library's one server (`npm run dev` in `~/Projects/reading-maps`) serves it at http://localhost:5179/__SLUG__/, so don't start a server here. It's also online at https://reading-maps.pages.dev/__SLUG__/ (the library's `npm run deploy`, when Neil asks; see the library's CLAUDE.md), where pictures without a free licence show only to readers signed in with an account Neil has flagged.
 
 Follow the `reading-map` skill (`~/.claude/skills/reading-map/SKILL.md`) for adding concepts, places, quotes, landmarks and routes, for the accuracy rules, and for checking changes. `src/content/types.ts` is the content contract.
 

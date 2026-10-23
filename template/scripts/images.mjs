@@ -8,7 +8,8 @@
 // A picture is any object in src/content/ with a `file:` (plus `wiki: 'en'` for an English Wikipedia
 // file); `own: true` pictures are Neil's, already in public/images/own/, and are skipped. One with a
 // `url:` comes from elsewhere on the web: it is saved in public/images/web/, credited to its `credit:`
-// and linked to its `page:`.
+// and linked to its `page:`, under its `license:` if it has a free one (otherwise the site's name, which
+// keeps it private on the website).
 import fs from 'node:fs';
 import path from 'node:path';
 
@@ -52,7 +53,7 @@ function wanted() {
           const obj = text.slice(text.lastIndexOf('{', m.index), text.indexOf('}', m.index));
           if (/own:\s*true/.test(obj)) continue;
           const url = field(obj, 'url');
-          if (url) found.set(file, { url, page: field(obj, 'page'), credit: field(obj, 'credit') });
+          if (url) found.set(file, { url, page: field(obj, 'page'), credit: field(obj, 'credit'), license: field(obj, 'license') });
           else found.set(file, /wiki:\s*'en'/.test(obj) ? 'en' : 'commons');
         }
       }
@@ -135,12 +136,15 @@ function dimensions(b) {
   return [];
 }
 
+/** The site a web photo comes from: its credit and licence when it gives neither. */
+const siteOf = ({ url, page }) => (page || /^https?:/.test(url) ? new URL(page ?? url).hostname.replace(/^www\./, '') : 'Saved copy');
+
 /** A photo from elsewhere on the web, saved as it is; or, with a path under public/, a copy already saved (a crop). */
-async function fromWeb(file, { url, page, credit }) {
+async function fromWeb(file, { url, page, credit, license }) {
+  const site = siteOf({ url, page });
   if (!/^https?:/.test(url)) {
     const [width, height] = dimensions(fs.readFileSync(path.join(ROOT, 'public', url)));
-    const site = page ? new URL(page).hostname.replace(/^www\./, '') : 'Saved copy';
-    return { src: url, width, height, credit: credit ?? site, license: site, page };
+    return { src: url, width, height, credit: credit ?? site, license: license ?? site, page };
   }
   const res = await fetch(url, { headers: { 'User-Agent': 'Mozilla/5.0 (Macintosh) reading-map/0.1' } });
   if (!res.ok) throw new Error(`${file}: download HTTP ${res.status}`);
@@ -150,8 +154,7 @@ async function fromWeb(file, { url, page, credit }) {
   fs.mkdirSync(path.join(OUT, 'web'), { recursive: true });
   fs.writeFileSync(path.join(OUT, 'web', name), body);
   const [width, height] = dimensions(body);
-  const site = new URL(page ?? url).hostname.replace(/^www\./, '');
-  return { src: `images/web/${name}`, width, height, credit: credit ?? site, license: site, page: page ?? url };
+  return { src: `images/web/${name}`, width, height, credit: credit ?? site, license: license ?? site, page: page ?? url };
 }
 
 const manifest = fs.existsSync(MANIFEST) ? JSON.parse(fs.readFileSync(MANIFEST, 'utf8')) : {};
@@ -159,7 +162,11 @@ fs.mkdirSync(OUT, { recursive: true });
 const files = wanted();
 let fetched = 0;
 for (const [file, wiki] of files) {
-  if (!all && manifest[file] && fs.existsSync(path.join(ROOT, 'public', manifest[file].src))) continue;
+  if (!all && manifest[file] && fs.existsSync(path.join(ROOT, 'public', manifest[file].src))) {
+    // A saved web photo's credit and licence come from the content: keep them current without fetching it again.
+    if (typeof wiki === 'object') Object.assign(manifest[file], { credit: wiki.credit ?? siteOf(wiki), license: wiki.license ?? siteOf(wiki) });
+    continue;
+  }
   try {
     if (typeof wiki === 'object') {
       manifest[file] = await fromWeb(file, wiki);

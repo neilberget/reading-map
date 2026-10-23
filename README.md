@@ -16,7 +16,7 @@ In Claude Code, from the folder where you keep projects:
 
 > Make a reading map for The Lonely Land by Sigurd Olson
 
-Claude works out the setting and the journey, scaffolds a project from `template/`, marks the start and end, and starts the dev server. Tracing the route runs in the background, so you can start reading straight away.
+Claude works out the setting and the journey, scaffolds a project from `template/`, marks the start and end, and puts it in your library of maps. Tracing the route runs in the background, so you can start reading straight away.
 
 ## While you read
 
@@ -59,7 +59,7 @@ Send things as you meet them, in as few words as you like. Claude decides what e
 - Concepts link to each other wiki-style, and each lists what links to it.
 - A satellite button swaps in aerial imagery.
 - Clicking the book's title zooms back out to the whole route.
-- Everything runs locally at `npm run dev`. Nothing is deployed.
+- Everything runs locally: one server for the whole library of books. The library can also put it online, where photos that aren't free to share show only to the accounts you flag.
 
 To show someone the map for a while, ask Claude to share it with ngrok. It builds the map and opens a temporary public link.
 

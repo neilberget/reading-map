@@ -74,6 +74,14 @@ export function prose(text: string): string {
     });
 }
 
+/**
+ * A file in public/, at the address the book is served from: the library serves each book under its own
+ * path (/the-lonely-land/), a preview build from /. Takes "oldmaps/x.webp" or "/data/route.geojson".
+ */
+export function asset(path: string): string {
+  return import.meta.env.BASE_URL + path.replace(/^\//, '');
+}
+
 /** A picture ready to show: the file on disk plus what it is and whose it is. */
 export interface Picture {
   file: string;
@@ -87,16 +95,40 @@ export interface Picture {
   portrait: boolean;
 }
 
-type Fetched = { src: string; width: number; height: number; credit: string; license: string; page: string };
+type Fetched = { src: string; width?: number; height?: number; credit: string; license: string; page?: string };
 
-/** Resolves a Pic against images.json, or null if `npm run images` hasn't fetched it yet. */
+/** Licences that let anyone see a picture. */
+const FREE = /^(Public domain|No restrictions|CC0|CC BY)/;
+
+/**
+ * Whether this reader sees the pictures without a free licence. Here, always. On the website (a build with
+ * VITE_ONLINE, made by the library's `npm run deploy`) only when signed in with an account Neil has flagged:
+ * `checkAccess` asks before the map is drawn, and those pictures come from /private/, which checks again.
+ */
+export const access = { private: !import.meta.env.VITE_ONLINE };
+
+export async function checkAccess(): Promise<void> {
+  if (!import.meta.env.VITE_ONLINE) return;
+  try {
+    const me = (await (await fetch('/api/me')).json()) as { private?: boolean };
+    access.private = me.private === true;
+  } catch {
+    // Can't tell: the free pictures still show.
+  }
+}
+
+/** Resolves a Pic against images.json, or null if `npm run images` hasn't fetched it yet or this reader can't see it. */
 export function picture(p: Pic | undefined): Picture | null {
   if (!p) return null;
-  if (p.own) return { file: p.file, src: `/images/own/${p.file}`, caption: p.caption, credit: p.credit ?? 'Neil', license: 'Own photo', portrait: !!p.portrait };
-  const got = (manifest as Record<string, Fetched>)[p.file];
+  const got: Fetched | undefined = p.own
+    ? { src: `images/own/${p.file}`, credit: 'Neil', license: p.license ?? 'Own photo' }
+    : (manifest as Record<string, Fetched>)[p.file];
   if (!got) {
     if (import.meta.env.DEV) console.warn(`Picture "${p.file}" isn't fetched yet: run npm run images`);
     return null;
   }
-  return { ...got, src: `/${got.src}`, file: p.file, caption: p.caption, portrait: !!p.portrait, credit: p.credit ?? got.credit };
+  const free = FREE.test(got.license);
+  if (!free && !access.private) return null;
+  const src = free || !import.meta.env.VITE_ONLINE ? asset(got.src) : `/private${import.meta.env.BASE_URL}${got.src}`;
+  return { ...got, src, file: p.file, caption: p.caption, portrait: !!p.portrait, credit: p.credit ?? got.credit };
 }
