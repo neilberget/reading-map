@@ -1,6 +1,6 @@
 # Writing content
 
-The contract is `src/content/types.ts`; this covers how to fill it well. The worked example is `~/Projects/reading-maps/the-lonely-land/src/content/chapter-01.ts`.
+The contract is `src/content/types.ts`; this covers how to fill it well. The worked example, if it's on this machine, is `~/Projects/reading-maps/the-lonely-land/src/content/chapter-01.ts`; the examples below show the same shapes.
 
 ## A concept
 

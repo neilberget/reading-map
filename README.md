@@ -4,7 +4,7 @@ A Claude Code skill for building interactive reading-companion maps: a local Map
 
 ## Install
 
-Clone it into your skills folder. You'll also need Node 22 or later.
+Clone it into your skills folder. You'll also need Node 22 or later, and Google Chrome, which Claude uses to screenshot the map and check its work. ImageMagick 7 (`magick`) is needed only to lay old scanned maps over the land, and ngrok only to share a link.
 
 ```bash
 git clone https://github.com/neilberget/reading-map.git ~/.claude/skills/reading-map
@@ -12,11 +12,11 @@ git clone https://github.com/neilberget/reading-map.git ~/.claude/skills/reading
 
 ## Start a book
 
-In Claude Code, from the folder where you keep projects:
+In Claude Code:
 
 > Make a reading map for The Lonely Land by Sigurd Olson
 
-Claude works out the setting and the journey, scaffolds a project from `template/`, marks the start and end, and puts it in your library of maps. Tracing the route runs in the background, so you can start reading straight away.
+Claude works out the setting and the journey, scaffolds a project from `template/` in `~/Projects/<book>`, marks the start and end, and starts the map at a local address. Tracing the route runs in the background, so you can start reading straight away.
 
 ## While you read
 
@@ -59,7 +59,7 @@ Send things as you meet them, in as few words as you like. Claude decides what e
 - Concepts link to each other wiki-style, and each lists what links to it.
 - A satellite button swaps in aerial imagery.
 - Clicking the book's title zooms back out to the whole route.
-- Everything runs locally: one server for the whole library of books. The library can also put it online, where photos that aren't free to share show only to the accounts you flag.
+- Everything runs locally: each book is a small Vite app at its own address on your machine.
 
 To show someone the map for a while, ask Claude to share it with ngrok. It builds the map and opens a temporary public link.
 
@@ -68,3 +68,5 @@ To show someone the map for a while, ask Claude to share it with ngrok. It build
 - `SKILL.md`: the workflow Claude follows.
 - `references/`: how to write content and trace journeys.
 - `template/`: the app each new book starts from (Vite, TypeScript, MapLibre, OpenFreeMap tiles).
+
+Not in here: the author's library, which serves all his books from one server and puts them online with private photos. SKILL.md mentions it; without it, each book runs on its own.

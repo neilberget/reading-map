@@ -5,7 +5,7 @@ description: Build and grow Neil's interactive reading-companion maps for the bo
 
 # Reading map
 
-Neil reads a book and wants a map open beside it. He names things as he reads, often in a few words, and expects them on the map with a short, accurate explanation, linked to everything related. The reference build is `~/Projects/reading-maps/the-lonely-land` (Sigurd Olson, *The Lonely Land*): open it when unsure how something should look or be written.
+Neil reads a book and wants a map open beside it. He names things as he reads, often in a few words, and expects them on the map with a short, accurate explanation, linked to everything related. The reference build is `~/Projects/reading-maps/the-lonely-land` (Sigurd Olson, *The Lonely Land*): open it, if it's on this machine, when unsure how something should look or be written.
 
 Two modes:
 
@@ -15,21 +15,21 @@ Two modes:
 ## Starting a new book
 
 1. **Work out the book yourself:** title, author, year, where it's set, and whether it follows a journey (start, end, the waters or trails between). Use what you know and a quick web search. Ask Neil only for what you can't find; usually nothing.
-2. **Scaffold:**
+2. **Scaffold** into the library (below). On a machine without `~/Projects/reading-maps`, the book stands on its own in `~/Projects/<book-slug>` instead, here and below:
    ```bash
    cp -R ~/.claude/skills/reading-map/template ~/Projects/reading-maps/<book-slug>
    cd ~/Projects/reading-maps/<book-slug> && npm install
    ```
    Then:
    - Fill in `src/book.ts`: title, author, year, a one-line tagline about where the book goes, `home` bounds framing the setting, `route` (`'/data/route.geojson'` if there's a journey, else `null`), and `units` for the scale bar (`'imperial'` if the book counts in miles).
-   - Replace the placeholders in `package.json` (`__SLUG__`) and `CLAUDE.md`.
-   - Give `vite.config.ts` its own `preview.port`, for sharing (below): the next free one after the other books' (`grep -h port ~/Projects/reading-maps/*/vite.config.ts`; The Lonely Land has 5181, the Stranglers 5183).
+   - Replace the placeholders in `package.json` (`__SLUG__`) and `CLAUDE.md`. For a book on its own, replace CLAUDE.md's sentences about the library and the website with one saying `npm run dev` here serves it at `http://localhost:<server.port>/`.
+   - Give `vite.config.ts` its own `server.port` and `preview.port`: the next free pair after the other books' (`grep -h port ~/Projects/reading-maps/*/vite.config.ts`; The Lonely Land has 5180 and 5181, the Stranglers 5182 and 5183). The library ignores `server.port`; it's where a book on its own serves itself. `preview.port` is for sharing (below).
 3. **Landmarks first:** put the journey's start and end (or the book's anchor places) in `src/content/landmarks.ts` with `end: true`, so the map is useful at once.
 4. **The journey** (if any): hand it to a background agent so Neil isn't waiting. Give the agent `references/journeys.md` and the waypoints you know from the book. The route draws itself when `public/data/route.geojson` appears.
-5. **Open it:** the library's server already serves the new folder at `http://localhost:5179/<book-slug>/`; give Neil that URL. If the server isn't running (`curl -s localhost:5179/books.json` fails), start it in the background with `npm run dev` in `~/Projects/reading-maps`. Never run `npm run dev` in a book: Neil wants one server for all of them. `git init` only if he asks.
-6. **Shelve it:** the book is on the library's front page (http://localhost:5179) by itself. Once the landmarks are in, give it a cover: `npm run covers -- <book-slug>` in `~/Projects/reading-maps`.
+5. **Open it:** the library's server already serves the new folder at `http://localhost:5179/<book-slug>/`; give Neil that URL. If the server isn't running (`curl -s localhost:5179/books.json` fails), start it in the background with `npm run dev` in `~/Projects/reading-maps`. Never run `npm run dev` in a book in the library: Neil wants one server for all of them. A book on its own runs its own: start `npm run dev` in it in the background and give the URL it prints. `git init` only if he asks.
+6. **Shelve it** (library only): the book is on the library's front page (http://localhost:5179) by itself. Once the landmarks are in, give it a cover: `npm run covers -- <book-slug>` in `~/Projects/reading-maps`.
 
-**The library** is `~/Projects/reading-maps`: one Node process (`server.mjs`) that shows the shelf at `/`, listing every folder there with a `src/book.ts`, newest work first, and serves each book at `/<book-slug>/` through the book's own Vite, so content edits hot-reload as before. Because a book isn't served from `/`, app code reaches files in `public/` through `asset()` (`src/content/index.ts`); content keeps writing `/data/route.geojson` or `oldmaps/x.webp`. `npm run covers` redraws all the covers (worth doing when a book's route or default map changes). See its `CLAUDE.md`.
+**The library** is `~/Projects/reading-maps`: one Node process (`server.mjs`) that shows the shelf at `/`, listing every folder there with a `src/book.ts`, newest work first, and serves each book at `/<book-slug>/` through the book's own Vite, so content edits hot-reload as before. Because a book isn't served from `/`, app code reaches files in `public/` through `asset()` (`src/content/index.ts`); content keeps writing `/data/route.geojson` or `oldmaps/x.webp`. `npm run covers` redraws all the covers (worth doing when a book's route or default map changes). See its `CLAUDE.md`. The library is Neil's and isn't part of this skill: without it, a book is a plain Vite app served from `/`, and the steps that name the library don't apply.
 
 **Online:** `npm run deploy` in the library puts every book on Neil's website (the library's `CLAUDE.md`, "Online"). Run it when he asks to put changes or a new book online, not after every edit. For a quick share without that, run `npm run build` in the book, then `npm run preview` and `ngrok http <preview port>` in the background; stop the preview when Neil is done sharing, since it's a second server. Give Neil the tunnel URL from `curl -s localhost:4040/api/tunnels`. Don't make an artifact for this: the artifact host blocks the outside map tiles, so it would need all the tiles bundled.
 
@@ -59,7 +59,7 @@ For each concept:
 
 **Quotes** go in exactly as sent; only straight quotes and apostrophes become curly. If something looks like a typo ("it makes a little difference"), keep his wording and ask. Verse keeps its lines: put `\n` between them. Set `by` for a speaker other than the author, as a `[[link]]` if that person is a concept. Set `about` to the concept the quote bears on.
 
-**Reply** in a few lines: what you added, what you assumed or couldn't confirm (an identification, a likely typo, a disputed date), and "reload to see". The library's server hot-reloads; no restart needed.
+**Reply** in a few lines: what you added, what you assumed or couldn't confirm (an identification, a likely typo, a disputed date), and "reload to see". The dev server hot-reloads; no restart needed.
 
 **Keep the project's CLAUDE.md current as you go**, so a new session can pick up mid-book without the old conversation. It should say where Neil is (the chapter he's on, anything he said he'd send), one entry per chapter in book order (what it covers, its places, what it brings back, its colours), the identifications he hasn't confirmed, and the questions waiting on him. A session's scratchpad doesn't survive: anything worth reusing goes in `scripts/` or the skill.
 
@@ -120,7 +120,7 @@ These maps are about real peoples and real history. Before writing a fact, check
 
 - `npx tsc --noEmit` after every change.
 - In dev, `window.__map` is the MapLibre map.
-- Screenshot: `npm run shot -- out.png [--chapter 3] [--open <id>] [--at lon,lat --zoom 12] [--sat] [--map <id>]` with the library's server running, then read the image. It drives Chrome through `puppeteer-core` from `~/Projects/geo-bird/node_modules`, setting what the page restores on load. For anything it can't do, write a one-off from it: click `[data-id="<id>"] .concept-head` or `.place-row[data-id="<id>"]`.
+- Screenshot: `npm run shot -- out.png [--chapter 3] [--open <id>] [--at lon,lat --zoom 12] [--sat] [--map <id>]` with the map running (the library's server, or a book's own), then read the image. It drives the installed Google Chrome (or the browser at `CHROME_PATH`) through `puppeteer-core`, setting what the page restores on load. For anything it can't do, write a one-off from it: click `[data-id="<id>"] .concept-head` or `.place-row[data-id="<id>"]`.
 - `scripts/tiles.mjs` reads OpenStreetMap geometry from the same vector tiles the map uses, so it works when Overpass is overloaded (it often is). Its commands are `names`, `islands`, `trace` and `water`; see `references/journeys.md`.
 
 ## Files in a project
@@ -148,6 +148,6 @@ scripts/shot.mjs          headless screenshots of the dev map
 src/{main,map,style,geo,lightbox}.ts, styles.css   the app; same in every book
 ```
 
-When you improve the app itself (not the content), copy the changed files back into `~/.claude/skills/reading-map/template/` so the next book gets the improvement. Another book's session may have improved the template too: diff the app files against it when you start, and take what's newer.
+When you improve the app itself (not the content), copy the changed files back into `~/.claude/skills/reading-map/template/` so the next book gets the improvement. Another book's session may have improved the template too: diff the app files and `package.json`'s dependencies against it when you start, and take what's newer (then `npm install` if the dependencies changed).
 
 The skill is a public GitHub repo (`neilberget/reading-map`, MIT). Change it locally as the app improves; commit or push only when Neil says to.

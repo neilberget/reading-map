@@ -2,16 +2,15 @@
 // A screenshot of the running dev map, for checking a new overlay, or a guessed spot against the
 // satellite or a topographic map. It sets what the page restores on load (view, chapter, open concept or
 // place, satellite, a map from the Maps menu), then can drop red labelled crosses on candidate points.
-// Needs the library's server running (`npm run dev` in ~/Projects/reading-maps), Google Chrome, and
-// puppeteer-core (borrowed from ~/Projects/geo-bird).
+// Needs the map running: the library's server (`npm run dev` in ~/Projects/reading-maps), or for a book on
+// its own, the book's `npm run dev`. Drives the installed Google Chrome, or the browser at CHROME_PATH.
 //   npm run shot -- <out.png> [--at lon,lat] [--zoom 12] [--chapter 3] [--open <id>] [--sat] [--map <old map id>]
 //     [--no-route] [--no-panel] [--mark "name:lon,lat"]...
 //   npm run shot -- camp.png --at -107.71,55.94 --zoom 13 --sat --no-panel --mark "camp:-107.7105,55.9378"
+import fs from 'node:fs';
 import path from 'node:path';
-import os from 'node:os';
-import { createRequire } from 'node:module';
+import puppeteer from 'puppeteer-core';
 
-const puppeteer = createRequire(`${os.homedir()}/Projects/geo-bird/package.json`)('puppeteer-core');
 const a = process.argv.slice(2);
 const out = a[0];
 const opt = (k) => (a.includes(k) ? a[a.indexOf(k) + 1] : undefined);
@@ -19,8 +18,12 @@ const marks = a.flatMap((x, i) => (a[i - 1] === '--mark' ? [x] : [])).map((m) =>
   const [n, ll] = m.split(':');
   return [n, ...ll.split(',').map(Number)];
 });
-// The library serves this book under its folder's name.
-const url = `http://localhost:5179/${path.basename(process.cwd())}/`;
+// The library serves this book under its folder's name, if it has it; a book on its own serves itself at
+// the server.port in its vite.config.ts.
+const slug = path.basename(process.cwd());
+const shelf = await fetch('http://localhost:5179/books.json').then((r) => r.json(), () => []).catch(() => []);
+const port = fs.readFileSync('vite.config.ts', 'utf8').match(/server:\s*\{[^}]*port:\s*(\d+)/)?.[1] ?? 5173;
+const url = shelf.some((b) => b.slug === slug) ? `http://localhost:5179/${slug}/` : `http://localhost:${port}/`;
 
 const at = opt('--at')?.split(',').map(Number), chapter = opt('--chapter');
 const saved = {
@@ -34,7 +37,8 @@ const saved = {
 const tiles = saved.satellite || saved.oldMap;
 
 const browser = await puppeteer.launch({
-  executablePath: '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  // Chrome wherever it installs itself on macOS, Windows or Linux, unless CHROME_PATH names another browser.
+  ...(process.env.CHROME_PATH ? { executablePath: process.env.CHROME_PATH } : { channel: 'chrome' }),
   headless: 'new',
   args: ['--use-angle=swiftshader', '--enable-unsafe-swiftshader', '--window-size=1400,900'],
 });

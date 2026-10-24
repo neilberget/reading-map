@@ -6,7 +6,10 @@ export default defineConfig({
   optimizeDeps: { exclude: ['maplibre-gl'] },
   // A local map loads in one piece: MapLibre and its worker alone are past Vite's 500 kB warning size.
   build: { chunkSizeWarningLimit: 2500 },
-  // The library's server (~/Projects/reading-maps) serves the book in development. This is only for sharing:
-  // `npm run build && npm run preview`, then `ngrok http <preview port>` to show someone the map for a while.
+  // In the library (~/Projects/reading-maps), its one server serves the book in development and this port is
+  // unused. A book on its own serves itself here with `npm run dev`.
+  server: { port: 5180 },
+  // Only for sharing: `npm run build && npm run preview`, then `ngrok http <preview port>` to show someone the
+  // map for a while.
   preview: { port: 5181, allowedHosts: ['.ngrok-free.app', '.ngrok-free.dev', '.ngrok.app'] },
 });
