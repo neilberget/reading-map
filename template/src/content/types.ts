@@ -2,7 +2,7 @@ export type LonLat = [number, number];
 
 /**
  * A picture. Wikimedia files are fetched by `npm run images`, which saves them in public/images/ with
- * their credit and licence (src/content/images.json). Neil's own photos go in public/images/own/.
+ * their credit and licence (src/content/images.json). The reader's own photos go in public/images/own/.
  * `npm run images` reads the source text, so write each field as a string literal, not a variable.
  */
 export interface Pic {
@@ -15,11 +15,11 @@ export interface Pic {
   caption: string;
   /** A file on English Wikipedia rather than Commons (the odd non-free upload). */
   wiki?: 'en';
-  /** Neil's own photo. */
+  /** The reader's own photo. */
   own?: boolean;
   /** A head-and-shoulders portrait: also shown round beside the name in the chapter list. */
   portrait?: boolean;
-  /** Overrides the credit: Wikimedia's when its metadata is unusable, or “Neil” on an `own` photo someone else took. Required with `url`. */
+  /** Who took it: overrides Wikimedia's credit when its metadata is unusable, and names whoever took an `own` photo. Required with `url`. */
   credit?: string;
   /**
    * A photo from elsewhere on the web, for a map kept private: the direct image address. `npm run images`
@@ -31,8 +31,8 @@ export interface Pic {
   page?: string;
   /**
    * With `url` or `own`: the licence, when it lets anyone see the picture ('Public domain', 'CC BY 4.0').
-   * Wikimedia pictures get theirs from `npm run images`. On the website a picture without a free licence
-   * shows only to readers signed in with an account Neil has flagged.
+   * Wikimedia pictures get theirs from `npm run images`. A library that puts its books online shows a
+   * picture without a free licence only to the readers it lets in.
    */
   license?: string;
 }
@@ -114,7 +114,7 @@ export interface Place {
   image?: Pic;
 }
 
-/** A passage Neil wants to keep, word for word. */
+/** A passage the reader wants to keep, word for word. */
 export interface Quote {
   text: string;
   /** Page number, if given. */

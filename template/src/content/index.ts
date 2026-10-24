@@ -101,9 +101,9 @@ type Fetched = { src: string; width?: number; height?: number; credit: string; l
 const FREE = /^(Public domain|No restrictions|CC0|CC BY)/;
 
 /**
- * Whether this reader sees the pictures without a free licence. Here, always. On the website (a build with
- * VITE_ONLINE, made by the library's `npm run deploy`) only when signed in with an account Neil has flagged:
- * `checkAccess` asks before the map is drawn, and those pictures come from /private/, which checks again.
+ * Whether this reader sees the pictures without a free licence. Here, always. On a library's website (a build
+ * with VITE_ONLINE) only when the site's /api/me says so: `checkAccess` asks before the map is drawn, and
+ * those pictures come from /private/, which checks again.
  */
 export const access = { private: !import.meta.env.VITE_ONLINE };
 
@@ -121,7 +121,7 @@ export async function checkAccess(): Promise<void> {
 export function picture(p: Pic | undefined): Picture | null {
   if (!p) return null;
   const got: Fetched | undefined = p.own
-    ? { src: `images/own/${p.file}`, credit: 'Neil', license: p.license ?? 'Own photo' }
+    ? { src: `images/own/${p.file}`, credit: '', license: p.license ?? 'Own photo' }
     : (manifest as Record<string, Fetched>)[p.file];
   if (!got) {
     if (import.meta.env.DEV) console.warn(`Picture "${p.file}" isn't fetched yet: run npm run images`);

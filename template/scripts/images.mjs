@@ -6,10 +6,10 @@
 //   npm run images -- --all   fetch everything again
 //
 // A picture is any object in src/content/ with a `file:` (plus `wiki: 'en'` for an English Wikipedia
-// file); `own: true` pictures are Neil's, already in public/images/own/, and are skipped. One with a
+// file); `own: true` pictures are the reader's, already in public/images/own/, and are skipped. One with a
 // `url:` comes from elsewhere on the web: it is saved in public/images/web/, credited to its `credit:`
 // and linked to its `page:`, under its `license:` if it has a free one (otherwise the site's name, which
-// keeps it private on the website).
+// keeps it private on a library's website).
 import fs from 'node:fs';
 import path from 'node:path';
 

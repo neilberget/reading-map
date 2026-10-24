@@ -2,6 +2,8 @@
 
 A Claude Code skill for building interactive reading-companion maps: a local MapLibre map beside a chapter-by-chapter panel of linked concepts, places, quotes and landmarks, with the book's journey traced on real lakes and rivers. The reference build is *The Lonely Land* (Sigurd F. Olson), the 1955 canoe trip from Île-à-la-Crosse to Cumberland House.
 
+It suits any book set in real places, and journeys most of all: travel, exploration, history, a novel's real country.
+
 ## Install
 
 Clone it into your skills folder. You'll also need Node 22 or later, and Google Chrome, which Claude uses to screenshot the map and check its work. ImageMagick 7 (`magick`) is needed only to lay old scanned maps over the land, and ngrok only to share a link.
@@ -17,6 +19,8 @@ In Claude Code:
 > Make a reading map for The Lonely Land by Sigurd Olson
 
 Claude works out the setting and the journey, scaffolds a project from `template/` in `~/Projects/<book>`, marks the start and end, and starts the map at a local address. Tracing the route runs in the background, so you can start reading straight away.
+
+To pick up another day, open Claude Code in the book's folder (`cd ~/Projects/<book> && claude`) and carry on. Claude starts the map again if it isn't running.
 
 ## While you read
 
@@ -54,6 +58,8 @@ Send things as you meet them, in as few words as you like. Claude decides what e
 
 > Can we add photos of the people and places?
 
+Your own photos can go on too: put them in the book's `public/images/own/` and say where they belong.
+
 ## What it's like
 
 - Concepts link to each other wiki-style, and each lists what links to it.
@@ -68,5 +74,3 @@ To show someone the map for a while, ask Claude to share it with ngrok. It build
 - `SKILL.md`: the workflow Claude follows.
 - `references/`: how to write content and trace journeys.
 - `template/`: the app each new book starts from (Vite, TypeScript, MapLibre, OpenFreeMap tiles).
-
-Not in here: the author's library, which serves all his books from one server and puts them online with private photos. SKILL.md mentions it; without it, each book runs on its own.

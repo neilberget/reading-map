@@ -1,45 +1,44 @@
 ---
 name: reading-map
-description: Build and grow Neil's interactive reading-companion maps for the books he reads, a local MapLibre map in the Flyway look of ~/Projects/geo-bird, kept together in a library at ~/Projects/reading-maps, with a chapter-by-chapter panel of linked concepts, places, quotes and landmarks, and the book's journey traced on real lakes and rivers. Use this whenever Neil starts a new book and wants a map ("make a reading map for X", "set up a map for my next book"), and inside any reading-map project (one with src/book.ts and src/content/chapter-NN.ts, e.g. ~/Projects/reading-maps/the-lonely-land) whenever he sends things from his reading, even with no instructions. That includes a bare name or list of names, "chN quote: …", a person, place, island or lake to add, a landmark to always show, the trip's members, a chapter title, or a route to trace.
+description: Build and grow an interactive reading-companion map for a book the user is reading, a local MapLibre map beside a chapter-by-chapter panel of linked concepts, places, quotes and landmarks, with the book's journey traced on real lakes, rivers and trails. Use this whenever the user starts a book and wants a map ("make a reading map for X", "set up a map for my next book"), and inside any reading-map project (one with src/book.ts and src/content/chapter-NN.ts) whenever they send things from their reading, even with no instructions. That includes a bare name or list of names, "chN quote: …", a person, place, island or lake to add, a landmark to always show, the trip's members, a chapter title, or a route to trace.
 ---
 
 # Reading map
 
-Neil reads a book and wants a map open beside it. He names things as he reads, often in a few words, and expects them on the map with a short, accurate explanation, linked to everything related. The reference build is `~/Projects/reading-maps/the-lonely-land` (Sigurd Olson, *The Lonely Land*): open it, if it's on this machine, when unsure how something should look or be written.
+The reader is reading a book and wants a map open beside it. They name things as they read, often in a few words, and expect them on the map with a short, accurate explanation, linked to everything related.
 
 Two modes:
 
-- **New book:** scaffold a project from `template/` (below). Takes a few minutes; Neil should be able to start reading straight away.
-- **Reading loop:** he sends names, quotes, places. Add them, check them, reply in a few lines.
+- **New book:** scaffold a project from this skill's `template/` (below). Takes a few minutes; the reader should be able to start reading straight away.
+- **Reading loop:** they send names, quotes, places. Add them, check them, reply in a few lines.
+
+**A library of books:** if `~/Projects/reading-maps/CLAUDE.md` exists, the reader keeps their books together there, served and shared its own way. Read it before starting a book, and follow it wherever it differs from this skill. (Inside a book there, it's already loaded.)
 
 ## Starting a new book
 
-1. **Work out the book yourself:** title, author, year, where it's set, and whether it follows a journey (start, end, the waters or trails between). Use what you know and a quick web search. Ask Neil only for what you can't find; usually nothing.
-2. **Scaffold** into the library (below). On a machine without `~/Projects/reading-maps`, the book stands on its own in `~/Projects/<book-slug>` instead, here and below:
+1. **Work out the book yourself:** title, author, year, where it's set, and whether it follows a journey (start, end, the waters or trails between). Use what you know and a quick web search. Ask the reader only for what you can't find; usually nothing. The map is of the real world: a novel set in real places works like any other book, but for an invented world, tell the reader the map can't show it.
+2. **Scaffold** a folder for the book, `~/Projects/<book-slug>` unless the reader keeps projects elsewhere:
    ```bash
-   cp -R ~/.claude/skills/reading-map/template ~/Projects/reading-maps/<book-slug>
-   cd ~/Projects/reading-maps/<book-slug> && npm install
+   mkdir -p ~/Projects && cp -R <this skill's directory>/template ~/Projects/<book-slug>
+   cd ~/Projects/<book-slug> && npm install
    ```
    Then:
    - Fill in `src/book.ts`: title, author, year, a one-line tagline about where the book goes, `home` bounds framing the setting, `route` (`'/data/route.geojson'` if there's a journey, else `null`), and `units` for the scale bar (`'imperial'` if the book counts in miles).
-   - Replace the placeholders in `package.json` (`__SLUG__`) and `CLAUDE.md`. For a book on its own, replace CLAUDE.md's sentences about the library and the website with one saying `npm run dev` here serves it at `http://localhost:<server.port>/`.
-   - Give `vite.config.ts` its own `server.port` and `preview.port`: the next free pair after the other books' (`grep -h port ~/Projects/reading-maps/*/vite.config.ts`; The Lonely Land has 5180 and 5181, the Stranglers 5182 and 5183). The library ignores `server.port`; it's where a book on its own serves itself. `preview.port` is for sharing (below).
+   - Replace the placeholders in `package.json` (`__SLUG__`) and `CLAUDE.md` (`__PORT__` is the `server.port` below).
+   - Give `vite.config.ts` its own `server.port` and `preview.port`: the next free pair after the other books' (`grep -h port ~/Projects/*/vite.config.ts`). `server.port` is the map's address while reading; `preview.port` is for sharing (below).
 3. **Landmarks first:** put the journey's start and end (or the book's anchor places) in `src/content/landmarks.ts` with `end: true`, so the map is useful at once.
-4. **The journey** (if any): hand it to a background agent so Neil isn't waiting. Give the agent `references/journeys.md` and the waypoints you know from the book. The route draws itself when `public/data/route.geojson` appears.
-5. **Open it:** the library's server already serves the new folder at `http://localhost:5179/<book-slug>/`; give Neil that URL. If the server isn't running (`curl -s localhost:5179/books.json` fails), start it in the background with `npm run dev` in `~/Projects/reading-maps`. Never run `npm run dev` in a book in the library: Neil wants one server for all of them. A book on its own runs its own: start `npm run dev` in it in the background and give the URL it prints. `git init` only if he asks.
-6. **Shelve it** (library only): the book is on the library's front page (http://localhost:5179) by itself. Once the landmarks are in, give it a cover: `npm run covers -- <book-slug>` in `~/Projects/reading-maps`.
+4. **The journey** (if any): hand it to a background agent so the reader isn't waiting. Give the agent `references/journeys.md` and the waypoints you know from the book. The route draws itself when `public/data/route.geojson` appears.
+5. **Open it:** start `npm run dev` in the book in the background and give the reader the URL it prints. Tell them how to come back another day: open Claude Code in the book's folder and carry on sending things. `git init` only if they ask.
 
-**The library** is `~/Projects/reading-maps`: one Node process (`server.mjs`) that shows the shelf at `/`, listing every folder there with a `src/book.ts`, newest work first, and serves each book at `/<book-slug>/` through the book's own Vite, so content edits hot-reload as before. Because a book isn't served from `/`, app code reaches files in `public/` through `asset()` (`src/content/index.ts`); content keeps writing `/data/route.geojson` or `oldmaps/x.webp`. `npm run covers` redraws all the covers (worth doing when a book's route or default map changes). See its `CLAUDE.md`. The library is Neil's and isn't part of this skill: without it, a book is a plain Vite app served from `/`, and the steps that name the library don't apply.
+**Sharing:** to show someone else the map for a while, run `npm run build` in the book, then `npm run preview` and `ngrok http <preview port>` in the background; stop the preview when the reader is done sharing, since it's a second server. Give the reader the tunnel URL from `curl -s localhost:4040/api/tunnels`. Whoever has the link sees everything on the map, pictures included. Don't make an artifact for this: the artifact host blocks the outside map tiles, so it would need all the tiles bundled.
 
-**Online:** `npm run deploy` in the library puts every book on Neil's website (the library's `CLAUDE.md`, "Online"). Run it when he asks to put changes or a new book online, not after every edit. For a quick share without that, run `npm run build` in the book, then `npm run preview` and `ngrok http <preview port>` in the background; stop the preview when Neil is done sharing, since it's a second server. Give Neil the tunnel URL from `curl -s localhost:4040/api/tunnels`. Don't make an artifact for this: the artifact host blocks the outside map tiles, so it would need all the tiles bundled.
-
-Chapters are added as he reads. Ask for a chapter's title once if you don't know it; never invent one. When a chapter covers a stretch of the journey ("this chapter is their first day, to a camp ten miles out"), give it a `view`, the [south-west, north-east] corners of that country, so opening the chapter frames it. An introduction, prologue or epilogue is a chapter without a `number` (e.g. `src/content/introduction.ts`, `title: 'Introduction'`), listed in `index.ts` in book order; its tab shows its title. Ask which part of the book he's in when it isn't clear. In *The Lonely Land*, everything first filed as chapter 1 turned out to be the introduction.
+Chapters are added as the reader goes. Ask for a chapter's title once if you don't know it; never invent one. When a chapter covers a stretch of the journey ("this chapter is their first day, to a camp ten miles out"), give it a `view`, the [south-west, north-east] corners of that country, so opening the chapter frames it. An introduction, prologue or epilogue is a chapter without a `number` (e.g. `src/content/introduction.ts`, `title: 'Introduction'`), listed in `index.ts` in book order; its tab shows its title. Ask which part of the book they're in when it isn't clear. In *The Lonely Land*, everything first filed as chapter 1 turned out to be the introduction.
 
 ## The reading loop
 
-Decide what each thing he sends is. Most messages are one of these:
+First make sure the map is up: if nothing answers at the book's `server.port` (`curl -s localhost:<port>`), start `npm run dev` in the background. Then decide what each thing the reader sends is. Most messages are one of these:
 
-| He sends | It becomes | Where |
+| They send | It becomes | Where |
 |---|---|---|
 | A people, institution, person, route, event, town with a story | **Concept**: 1–2 paragraphs plus an overlay | `chapter.concepts` |
 | An island, point, lake, minor spot ("a minor landmark I can click") | **Place**: a name, a note, and a fly-to | `chapter.places` |
@@ -47,49 +46,49 @@ Decide what each thing he sends is. Most messages are one of these:
 | "always show X" / "so I can find my bearings" | **Landmark** | `src/content/landmarks.ts` |
 | Trip members, companions, crew | Concepts in a `party` group, plus a hub concept that links them all | `chapter.concepts` |
 
-For a bare name, decide from the book: a big subject with history becomes a concept; a spot on the shore becomes a place. If unsure, make it a place and offer to promote it. Add things in the order he sends them, to the chapter he's on (the one he names, else the last chapter he added to). When a concept or place from an earlier chapter comes up again ("add the Crees to ch1 as well", "list the Drum in this chapter too"), put its id in that chapter's `again` list rather than copying it: it shows in both, opens in place, and notes where it was first named.
+For a bare name, decide from the book: a big subject with history becomes a concept; a spot on the shore becomes a place. If unsure, make it a place and offer to promote it. Add things in the order they're sent, to the chapter the reader is on (the one they name, else the last chapter added to). When a concept or place from an earlier chapter comes up again ("add the Crees to ch1 as well", "list the Drum in this chapter too"), put its id in that chapter's `again` list rather than copying it: it shows in both, opens in place, and notes where it was first named.
 
 For each concept:
 
 1. **Research and check facts** (see Accuracy). For four or more at once, spawn a fact-check agent with the prompt pattern in `references/content.md` and draft while it works.
-2. **Write the text.** Give the context the book doesn't: who, what, when, where it touches the book's route or story. Don't paraphrase the author: Neil is reading him. Use plain, specific sentences. Give peoples' own names alongside the book's. Give distances, areas and heights in the book's units (`book.units`), so they compare with what he's reading.
+2. **Write the text.** Give the context the book doesn't: who, what, when, where it touches the book's route or story. Don't paraphrase the author: the reader has the book. Use plain, specific sentences. Give peoples' own names alongside the book's. Give distances, areas and heights in the book's units (`book.units`), so they compare with what the reader is reading.
 3. **Draw the overlay**: areas, sites, lines (`references/content.md` covers how). Places need real coordinates: `npm run tiles -- names <bbox> "<regex>"`, or `islands` for unnamed islands.
 4. **Link both ways.** Write `[[id]]` or `[[id|words]]` in the new text wherever another concept is mentioned, and add links to the new concept from existing text that mentions it. "Linked from" lists are generated automatically.
 5. **Check it:** `npx tsc --noEmit`. Take a screenshot when the overlay is new or unusual (see Checking).
 
-**Quotes** go in exactly as sent; only straight quotes and apostrophes become curly. If something looks like a typo ("it makes a little difference"), keep his wording and ask. Verse keeps its lines: put `\n` between them. Set `by` for a speaker other than the author, as a `[[link]]` if that person is a concept. Set `about` to the concept the quote bears on.
+**Quotes** go in exactly as sent; only straight quotes and apostrophes become curly. If something looks like a typo ("it makes a little difference"), keep the reader's wording and ask. Verse keeps its lines: put `\n` between them. Set `by` for a speaker other than the author, as a `[[link]]` if that person is a concept. Set `about` to the concept the quote bears on.
 
 **Reply** in a few lines: what you added, what you assumed or couldn't confirm (an identification, a likely typo, a disputed date), and "reload to see". The dev server hot-reloads; no restart needed.
 
-**Keep the project's CLAUDE.md current as you go**, so a new session can pick up mid-book without the old conversation. It should say where Neil is (the chapter he's on, anything he said he'd send), one entry per chapter in book order (what it covers, its places, what it brings back, its colours), the identifications he hasn't confirmed, and the questions waiting on him. A session's scratchpad doesn't survive: anything worth reusing goes in `scripts/` or the skill.
+**Keep the project's CLAUDE.md current as you go**, so a new session can pick up mid-book without the old conversation. It should say where the reader is (the chapter they're on, anything they said they'd send), one entry per chapter in book order (what it covers, its places, what it brings back, its colours), the identifications they haven't confirmed, and the questions waiting on them. A session's scratchpad doesn't survive: anything worth reusing goes in `scripts/`.
 
 ## Finding a spot from the text
 
-Neil often asks where something in the text was: a night's camp, a lunch stop, "a long point a mile away". Work it out, pin your best guess as a place, and say how sure you are.
+Readers often ask where something in the text was: a night's camp, a lunch stop, "a long point a mile away". Work it out, pin your best guess as a place, and say how sure you are.
 
 - Measure: `npm run along -- <lon,lat> <lon,lat>` gives each point's distance along the route and the gap between them; `npm run along -- <lon,lat> +20` gives where "twenty miles on" lands. Authors' distances are often off (Olson's ran 25–30% high), so let the description decide: which shore, rock or sand, what could be seen from it, how long they paddled.
-- Look: `npm run shot -- out.png --at <lon,lat> --zoom 13 --sat --no-panel --mark "a:<lon,lat>" --mark "b:<lon,lat>"`, and again with `--map toporama` for contours and names. Read the images before choosing.
-- Names: in Canada, the CGNDB gazetteer has rapids, points and bays that OpenStreetMap lacks: `https://geogratis.gc.ca/services/geoname/en/geonames.json?q=<name>&bbox=W,S,E,N`, or `concise=RAP` (rapids), `FALL` or `LAKE` in place of `q`. `npm run tiles -- names` covers OpenStreetMap.
-- Neil checks the satellite view himself and often spots it first (cabins across a channel, a rapid right after a bend). When he does, put the pin where he says.
-- Record each guess and its reasoning in the project's CLAUDE.md, with the identifications he hasn't confirmed.
+- Look: `npm run shot -- out.png --at <lon,lat> --zoom 13 --sat --no-panel --mark "a:<lon,lat>" --mark "b:<lon,lat>"`, and again with a topographic map from the Maps menu (`--map <id>`) for contours and names. Read the images before choosing.
+- Names: in Canada, the CGNDB gazetteer has rapids, points and bays that OpenStreetMap lacks: `https://geogratis.gc.ca/services/geoname/en/geonames.json?q=<name>&bbox=W,S,E,N`, or `concise=RAP` (rapids), `FALL` or `LAKE` in place of `q`. `npm run tiles -- names` covers OpenStreetMap anywhere.
+- The reader may check the satellite view and spot it first (cabins across a channel, a rapid right after a bend). When they do, put the pin where they say.
+- Record each guess and its reasoning in the project's CLAUDE.md, with the identifications the reader hasn't confirmed.
 
 ## Pictures
 
-Pictures make the map come alive. Concepts take `images` (the first is shown large; a `portrait: true` first image also appears round beside the name in the list). Sites, places and landmarks take `image`, as do route waypoints via `src/content/waypoints.ts`. Each is a `Pic`: a Wikimedia `file` name plus your own `caption`. Run `npm run images` to download new ones into `public/images/` and record their credit and licence in `src/content/images.json`. Neil's own photos go in `public/images/own/` with `own: true`; add `credit` when someone else took them (a family member, the author). Online, a picture without a free licence (Neil's own, a web photo, a non-free Wikipedia upload) is private: only readers signed in with an account Neil has flagged see it, and everyone else gets the map without it.
+Pictures make the map come alive. Concepts take `images` (the first is shown large; a `portrait: true` first image also appears round beside the name in the list). Sites, places and landmarks take `image`, as do route waypoints via `src/content/waypoints.ts`. Each is a `Pic`: a Wikimedia `file` name plus your own `caption`. Run `npm run images` to download new ones into `public/images/` and record their credit and licence in `src/content/images.json`. The reader's own photos go in `public/images/own/` with `own: true`; give them a `credit` naming whoever took them.
 
-- Prefer public domain, CC0, CC BY or CC BY-SA, which everyone sees online. A non-free Wikipedia upload (`wiki: 'en'`) is fine too; online it's private.
+- Prefer public domain, CC0, CC BY or CC BY-SA, which are fine to show anyone. A non-free Wikipedia upload (`wiki: 'en'`) is fine too, for the reader's own map.
 - Check that every picture shows what it claims. Read the file's description, source institution and date. Wikimedia titles are often wrong: "Sir George Simpson, 1850" is a William Notman photograph, and Notman opened his studio in 1856. Write the caption from what you verified, not from the file title.
 - Peoples: prefer documented historical photographs or artworks with named subjects, places, artists and titles. Use none rather than a generic or staged image.
 - For more than a few pictures, hand the search to a background agent with the prompt in `references/content.md`.
 - Wikimedia throttles downloads (HTTP 429) after about ten files; `npm run images` waits and retries on its own, so run it in the background for a big batch.
 - When Wikimedia's credit metadata is a mess (a URL, a catalogue record), set `credit` on the Pic by hand.
-- Photos can also come from anywhere on the web: canoe trip reports, lodges, Flickr, archives. Give the Pic a `url` (the direct image address), a `page` (where it appears) and a `credit` (the photographer or site); `npm run images` saves a copy in `public/images/web/`, and the credit links back to the page. Look at every one before captioning it. Online they're private, unless you've confirmed the picture is free and say so with `license` (e.g. `license: 'Public domain'` on a crop of a public-domain scan); an ngrok share shows them to whoever has the link.
+- Photos can also come from anywhere on the web: trip reports, lodges, Flickr, archives. Give the Pic a `url` (the direct image address), a `page` (where it appears) and a `credit` (the photographer or site); `npm run images` saves a copy in `public/images/web/`, and the credit links back to the page. Look at every one before captioning it. They're for the reader's own map: a share shows them to whoever has the link. When you've confirmed one is free, say so with `license` (e.g. `license: 'Public domain'` on a crop of a public-domain scan).
 
 The satellite button (under the zoom controls) swaps the drawn land and water for Esri World Imagery, keeping the route, labels and overlays. Nothing to set up.
 
 ## Old maps
 
-The map button under the satellite one opens a menu of maps to lay over the land and water (`src/content/oldmaps.ts`; it stays hidden while the list is empty), with a strength slider and a switch to hide the route. Present-day topographic maps go first with `today: true`: Esri World Topo (`https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`) anywhere, and in Canada Natural Resources Canada's Toporama WMS (`https://maps.geogratis.gc.ca/wms/toporama_en?...&layers=WMS-Toporama&srs=EPSG:3857&bbox={bbox-epsg-3857}&width=256&height=256&format=image/png`). Give one `default: true` when it suits the book better than the drawn map (USGS Topo did for the Dakota prairie): it shows from the first visit until the reader picks another or None. Then historical ones. A map is either XYZ tiles someone has already georeferenced (`tiles`) or a scan warped into web mercator and saved in `public/oldmaps/` (`image` and `bounds`):
+The map button under the satellite one opens a menu of maps to lay over the land and water (`src/content/oldmaps.ts`; it stays hidden while the list is empty), with a strength slider and a switch to hide the route. Present-day topographic maps go first with `today: true`: Esri World Topo (`https://server.arcgisonline.com/ArcGIS/rest/services/World_Topo_Map/MapServer/tile/{z}/{y}/{x}`) anywhere, and in Canada Natural Resources Canada's Toporama WMS (`https://maps.geogratis.gc.ca/wms/toporama_en?...&layers=WMS-Toporama&srs=EPSG:3857&bbox={bbox-epsg-3857}&width=256&height=256&format=image/png`). Give one `default: true` when it suits the book better than the drawn map (USGS Topo did for the Dakota prairie): it shows from the first visit until the reader picks another or None. Then historical ones. A map is either XYZ tiles someone has already georeferenced (`tiles`) or a scan warped into web mercator and saved in `public/oldmaps/` (`image` and `bounds`). Warping needs ImageMagick 7 (`magick`):
 
 - Graticule: for maps with ruled latitude and longitude, estimate the crossings and refine them with `node scripts/graticule.mjs <img> <estimates.json>`, drop any that locked onto the frame, then `npm run oldmap -- <img> <cp.json> W S E N <px per degree> public/oldmaps/<id>.webp`. Check the fit's residual it prints; a few pixels is good.
 - Survey sheets bounded by meridians and parallels: read the four corners and use `--order b`.
@@ -101,7 +100,7 @@ Good sources: Natural Resources Canada's OSTR repository (Geological Survey maps
 
 ## Accuracy
 
-These maps are about real peoples and real history. Before writing a fact, check it. The Dictionary of Canadian Biography (`http://www.biographi.ca/en/bio/<slug>.html`) is reliable and fetchable with curl. Others: The Canadian Encyclopedia (blocks scripts; use WebFetch), Encyclopedia of Saskatchewan, Parks Canada, Wikipedia for orientation, and nations' own sites.
+These maps are about real peoples and real history. Before writing a fact, check it, using the best sources for the book's country and period. In Canada, the Dictionary of Canadian Biography (`http://www.biographi.ca/en/bio/<slug>.html`) is reliable and fetchable with curl; others there are The Canadian Encyclopedia (blocks scripts; use WebFetch), the Encyclopedia of Saskatchewan and Parks Canada. Anywhere: national biographies and encyclopedias, park services and historical societies, Wikipedia for orientation, and nations' own sites.
 
 - When sources disagree or you're unsure, say so in the text ("accounts differ on the year", "most likely the island Olson means").
 - Present a contested idea as contested (e.g. the "Cree westward migration").
@@ -120,7 +119,7 @@ These maps are about real peoples and real history. Before writing a fact, check
 
 - `npx tsc --noEmit` after every change.
 - In dev, `window.__map` is the MapLibre map.
-- Screenshot: `npm run shot -- out.png [--chapter 3] [--open <id>] [--at lon,lat --zoom 12] [--sat] [--map <id>]` with the map running (the library's server, or a book's own), then read the image. It drives the installed Google Chrome (or the browser at `CHROME_PATH`) through `puppeteer-core`, setting what the page restores on load. For anything it can't do, write a one-off from it: click `[data-id="<id>"] .concept-head` or `.place-row[data-id="<id>"]`.
+- Screenshot: `npm run shot -- out.png [--chapter 3] [--open <id>] [--at lon,lat --zoom 12] [--sat] [--map <id>]` with the map running, then read the image. It drives the installed Google Chrome (or the browser at `CHROME_PATH`) through `puppeteer-core`, setting what the page restores on load. For anything it can't do, write a one-off from it: click `[data-id="<id>"] .concept-head` or `.place-row[data-id="<id>"]`.
 - `scripts/tiles.mjs` reads OpenStreetMap geometry from the same vector tiles the map uses, so it works when Overpass is overloaded (it often is). Its commands are `names`, `islands`, `trace` and `water`; see `references/journeys.md`.
 
 ## Files in a project
@@ -132,14 +131,14 @@ src/content/introduction.ts  the same for an unnumbered part (introduction, prol
 src/content/landmarks.ts  always-on markers
 src/content/waypoints.ts  pictures for route waypoints, by name
 src/content/images.json   generated by `npm run images`: credit, licence, size of each picture
-public/images/            downloaded pictures (own/ for Neil's)
+public/images/            downloaded pictures (own/ for the reader's own)
 src/content/types.ts      the content contract; read it before writing content
 src/content/routes.ts     shared hand-placed line stretches (create when needed)
 src/content/traced/       traced geometry modules (create when needed)
 public/data/route.geojson the journey: one LineString plus waypoint Points
 src/content/oldmaps.ts    the Maps menu: today's topographic maps and warped old ones
 public/oldmaps/           warped old-map images
-public/images/web/        web photos (private online, unless their Pic has a free `license`)
+public/images/web/        web photos
 scripts/tiles.mjs         OSM-from-tiles helper
 scripts/images.mjs        picture fetcher
 scripts/oldmap.mjs, graticule.mjs   warping old maps
@@ -148,6 +147,4 @@ scripts/shot.mjs          headless screenshots of the dev map
 src/{main,map,style,geo,lightbox}.ts, styles.css   the app; same in every book
 ```
 
-When you improve the app itself (not the content), copy the changed files back into `~/.claude/skills/reading-map/template/` so the next book gets the improvement. Another book's session may have improved the template too: diff the app files and `package.json`'s dependencies against it when you start, and take what's newer (then `npm install` if the dependencies changed).
-
-The skill is a public GitHub repo (`neilberget/reading-map`, MIT). Change it locally as the app improves; commit or push only when Neil says to.
+A book may be served from a path other than `/` (a library serves each under its folder), so app code reaches files in `public/` through `asset()` (`src/content/index.ts`); content keeps writing `/data/route.geojson` or `oldmaps/x.webp`. Change a book's app when the reader asks, in that book; leave this skill's own files alone unless they ask.

@@ -15,12 +15,12 @@ export function pictureButton(pic: Picture, cls: string): string {
   );
 }
 
-/** "Credit · Licence", with the licence linking to the source page. */
+/** "Credit · Licence", with the licence linking to the source page; just the licence for an uncredited own photo. */
 export function creditLine(pic: Picture): string {
   const license = pic.page
     ? `<a href="${attr(pic.page)}" target="_blank" rel="noopener">${attr(pic.license)}</a>`
     : attr(pic.license);
-  return `${attr(pic.credit)} · ${license}`;
+  return pic.credit ? `${attr(pic.credit)} · ${license}` : license;
 }
 
 let dialog: HTMLDialogElement | null = null;
