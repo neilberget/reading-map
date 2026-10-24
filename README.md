@@ -1,6 +1,8 @@
 # reading-map
 
-A Claude Code skill for building interactive reading-companion maps: a local MapLibre map beside a chapter-by-chapter panel of linked concepts, places, quotes and landmarks, with the book's journey traced on real lakes and rivers. The reference build is *The Lonely Land* (Sigurd F. Olson), the 1955 canoe trip from Île-à-la-Crosse to Cumberland House.
+A Claude Code skill for building interactive reading-companion maps: a local MapLibre map beside a chapter-by-chapter panel of linked concepts, places, quotes and landmarks, with the book's journey traced on real lakes and rivers. The reference build is *The Lonely Land* (Sigurd F. Olson), the 1955 canoe trip from Île-à-la-Crosse to Cumberland House. See it live: [The Lonely Land](https://reading-maps.pages.dev/the-lonely-land/).
+
+![The Lonely Land reading map: the Cree homelands drawn around Olson's canoe route, with a photograph and notes in the chapter panel](docs/the-lonely-land.jpg)
 
 It suits any book set in real places, and journeys most of all: travel, exploration, history, a novel's real country.
 

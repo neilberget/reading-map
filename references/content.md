@@ -23,7 +23,7 @@ The contract is `src/content/types.ts`; this covers how to fill it well.
 ```
 
 - **Body:** one or two paragraphs. The first says what it is and how it touches the book (the route, the setting, the people in it). The second gives the history that makes the book's mention mean something. Prefer dates, names and places to adjectives. Don't retell the author's own passage; give what he leaves out.
-- **People in the book's party:** the author usually gives each a paragraph. Write who the person was outside the book: birth and death years, career, what they were known for. Then one line on their part in the trip if known. Give them a shared `group` (e.g. `party`), `kind: 'The party'` and one colour, and add a hub concept (`id: 'party'`) that names and links everyone.
+- **People in the book's party:** the author usually gives each a paragraph. Write who the person was outside the book: birth and death years, career, what they were known for. Then one line on their part in the trip if known. Give them a shared `group` (e.g. `party`), `kind: 'The party'` and one colour, and once there are two or more, a hub concept (`id: 'party'`) that names and links everyone.
 - **Icons:** `cross` mission, `square` post, fort, settlement or depot, `diamond` portage, `triangle` rapids or falls, `ring` landmark or minor feature, `dot` community or person's place.
 - **Site notes** are one sentence and may contain `[[links]]`. Use `year` for a founding date or span ('1774', 'c. 1849', '1820–21', 'to 1803').
 - **Areas** (a people's homeland, a charter territory): 10–25 points, clockwise or not, no closing point needed. Give a label point where the name won't sit on the journey. Say "around 1800", "approximate" or similar in the text; homelands overlapped and moved.

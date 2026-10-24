@@ -13,7 +13,7 @@ The book's route is `public/data/route.geojson`, and `book.route` points at it. 
 ] }
 ```
 
-- Run the line from the start of the journey to its end, in travel order.
+- Run the line from the start of the journey to its end, in travel order, starting where the book's journey starts. A round trip is still one line: trace the way out first and write the file, then go on with the way back, which may run back over the way out.
 - Use 1,500–3,000 vertices, rounded to 5 decimals.
 - `kind` is one of: settlement, rapids, portage, lake, landmark.
 - Include 15–30 named waypoints that the book or the classic route mentions.
@@ -33,8 +33,10 @@ The book's route is `public/data/route.geojson`, and `book.route` points at it. 
      - The Minnesota–Ontario border: `--layer boundary --where admin_level=2 --not maritime=1 --zoom 11`.
      - Pieces are stitched with a shortest-path search, bridging gaps under `--bridge` metres (default 100).
      - Rivers broken up by lakes won't connect this way; use `water` for those.
+   - **Overland with no mapped way** (a pass crossed on horseback, a trail long since lost): hand-place a point every few kilometres along the valleys and ridges the sources describe, checked against a satellite screenshot (`npm run shot -- … --sat --no-panel`). Say in a nearby waypoint's note that the stretch is approximate.
 4. **Write the file**, overwriting in place, as soon as a reasonable version exists. Then refine the gaps; the map picks up each new version on reload.
 5. **Check it:** take a screenshot at the overview and at zoom ~9.5 over a tricky stretch (portages, river forks). In dev you can add a test line with `window.__map.addSource/addLayer` to compare a candidate against the current route.
+6. **Report.** The route is done when it runs start to end in travel order on the right waters and ways, with its waypoints where the book puts them. Report then, or at your deadline with what you have: what's traced, what's hand-placed or approximate, and anything for the reader to confirm. Don't keep refining without reporting.
 
 ## Other traced geometry
 

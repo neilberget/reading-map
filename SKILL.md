@@ -24,15 +24,15 @@ Two modes:
    ```
    Then:
    - Fill in `src/book.ts`: title, author, year, a one-line tagline about where the book goes, `home` bounds framing the setting, `route` (`'/data/route.geojson'` if there's a journey, else `null`), and `units` for the scale bar (`'imperial'` if the book counts in miles).
-   - Replace the placeholders in `package.json` (`__SLUG__`) and `CLAUDE.md` (`__PORT__` is the `server.port` below).
-   - Give `vite.config.ts` its own `server.port` and `preview.port`: the next free pair after the other books' (`grep -h port ~/Projects/*/vite.config.ts`). `server.port` is the map's address while reading; `preview.port` is for sharing (below).
+   - Replace every placeholder in `package.json` and `CLAUDE.md` (`grep -n '__[A-Z_]*__' package.json CLAUDE.md` lists them; `__PORT__` is the `server.port` below).
+   - Give `vite.config.ts` its own `server.port` and `preview.port`: the next free pair after the other books' (`find ~/Projects -maxdepth 2 -name vite.config.ts -not -path '*/<book-slug>/*' -exec grep -h 'port:' {} +`). With no other books, keep the template's 5180 and 5181. `server.port` is the map's address while reading; `preview.port` is for sharing (below).
 3. **Landmarks first:** put the journey's start and end (or the book's anchor places) in `src/content/landmarks.ts` with `end: true`, so the map is useful at once.
-4. **The journey** (if any): hand it to a background agent so the reader isn't waiting. Give the agent `references/journeys.md` and the waypoints you know from the book. The route draws itself when `public/data/route.geojson` appears.
+4. **The journey** (if any): hand it to a background agent so the reader isn't waiting. Give the agent `references/journeys.md`, the waypoints you know from the book, and a deadline of about 20 minutes to report what it has. The route draws itself when `public/data/route.geojson` appears.
 5. **Open it:** start `npm run dev` in the book in the background and give the reader the URL it prints. Tell them how to come back another day: open Claude Code in the book's folder and carry on sending things. `git init` only if they ask.
 
 **Sharing:** to show someone else the map for a while, run `npm run build` in the book, then `npm run preview` and `ngrok http <preview port>` in the background; stop the preview when the reader is done sharing, since it's a second server. Give the reader the tunnel URL from `curl -s localhost:4040/api/tunnels`. Whoever has the link sees everything on the map, pictures included. Don't make an artifact for this: the artifact host blocks the outside map tiles, so it would need all the tiles bundled.
 
-Chapters are added as the reader goes. Ask for a chapter's title once if you don't know it; never invent one. When a chapter covers a stretch of the journey ("this chapter is their first day, to a camp ten miles out"), give it a `view`, the [south-west, north-east] corners of that country, so opening the chapter frames it. An introduction, prologue or epilogue is a chapter without a `number` (e.g. `src/content/introduction.ts`, `title: 'Introduction'`), listed in `index.ts` in book order; its tab shows its title. Ask which part of the book they're in when it isn't clear. In *The Lonely Land*, everything first filed as chapter 1 turned out to be the introduction.
+Chapters are added as the reader goes. The template's `src/content/chapter-01.ts` is a placeholder for the first chapter they send things from, which may be well into the book: rename the file and its export to that chapter (`chapter-16.ts`, `chapter16`, also in `index.ts`) and set its `number` and `title`. Ask for a chapter's title once if you don't know it; never invent one. A table of contents you find (the publisher's, a library catalogue's) is fine to offer for the reader to confirm, since editions differ. When a chapter covers a stretch of the journey ("this chapter is their first day, to a camp ten miles out"), give it a `view`, the [south-west, north-east] corners of that country, so opening the chapter frames it. An introduction, prologue or epilogue is a chapter without a `number` (e.g. `src/content/introduction.ts`, `title: 'Introduction'`), listed in `index.ts` in book order; its tab shows its title. Ask which part of the book they're in when it isn't clear. In *The Lonely Land*, everything first filed as chapter 1 turned out to be the introduction.
 
 ## The reading loop
 
@@ -44,7 +44,7 @@ First make sure the map is up: if nothing answers at the book's `server.port` (`
 | An island, point, lake, minor spot ("a minor landmark I can click") | **Place**: a name, a note, and a fly-to | `chapter.places` |
 | "chN quote: …", "intro quote: …" | **Quote**, word for word | `chapter.quotes` |
 | "always show X" / "so I can find my bearings" | **Landmark** | `src/content/landmarks.ts` |
-| Trip members, companions, crew | Concepts in a `party` group, plus a hub concept that links them all | `chapter.concepts` |
+| Trip members, companions, crew | Concepts in a `party` group, plus a hub concept that links them all once there are two or more | `chapter.concepts` |
 
 For a bare name, decide from the book: a big subject with history becomes a concept; a spot on the shore becomes a place. If unsure, make it a place and offer to promote it. Add things in the order they're sent, to the chapter the reader is on (the one they name, else the last chapter added to). When a concept or place from an earlier chapter comes up again ("add the Crees to ch1 as well", "list the Drum in this chapter too"), put its id in that chapter's `again` list rather than copying it: it shows in both, opens in place, and notes where it was first named.
 
@@ -119,7 +119,7 @@ These maps are about real peoples and real history. Before writing a fact, check
 
 - `npx tsc --noEmit` after every change.
 - In dev, `window.__map` is the MapLibre map.
-- Screenshot: `npm run shot -- out.png [--chapter 3] [--open <id>] [--at lon,lat --zoom 12] [--sat] [--map <id>]` with the map running, then read the image. It drives the installed Google Chrome (or the browser at `CHROME_PATH`) through `puppeteer-core`, setting what the page restores on load. For anything it can't do, write a one-off from it: click `[data-id="<id>"] .concept-head` or `.place-row[data-id="<id>"]`.
+- Screenshot: `npm run shot -- out.png [--chapter 3] [--open <id>] [--at lon,lat --zoom 12] [--home] [--sat] [--map <id>]` with the map running, then read the image. `--home` frames the whole journey. It drives the installed Google Chrome (or the browser at `CHROME_PATH`) through `puppeteer-core`, setting what the page restores on load, and prints the page's warnings (an unknown id, a picture not fetched yet): fix them. For anything it can't do, write a one-off from it: click `[data-id="<id>"] .concept-head` or `.place-row[data-id="<id>"]`.
 - `scripts/tiles.mjs` reads OpenStreetMap geometry from the same vector tiles the map uses, so it works when Overpass is overloaded (it often is). Its commands are `names`, `islands`, `trace` and `water`; see `references/journeys.md`.
 
 ## Files in a project

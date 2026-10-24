@@ -5,7 +5,9 @@
 // Needs the map running: the library's server (`npm run dev` in ~/Projects/reading-maps), or for a book on
 // its own, the book's `npm run dev`. Drives the installed Google Chrome, or the browser at CHROME_PATH.
 //   npm run shot -- <out.png> [--at lon,lat] [--zoom 12] [--chapter 3] [--open <id>] [--sat] [--map <old map id>]
-//     [--no-route] [--no-panel] [--mark "name:lon,lat"]...
+//     [--home] [--no-route] [--no-panel] [--mark "name:lon,lat"]...
+// --home frames the whole journey, as the book's title does. The page's own warnings and errors (an unknown
+// id, a picture not fetched yet) are printed once each.
 //   npm run shot -- camp.png --at -107.71,55.94 --zoom 13 --sat --no-panel --mark "camp:-107.7105,55.9378"
 import fs from 'node:fs';
 import path from 'node:path';
@@ -23,7 +25,7 @@ const marks = a.flatMap((x, i) => (a[i - 1] === '--mark' ? [x] : [])).map((m) =>
 const slug = path.basename(process.cwd());
 const shelf = await fetch('http://localhost:5179/books.json').then((r) => r.json(), () => []).catch(() => []);
 const port = fs.readFileSync('vite.config.ts', 'utf8').match(/server:\s*\{[^}]*port:\s*(\d+)/)?.[1] ?? 5173;
-const url = shelf.some((b) => b.slug === slug) ? `http://localhost:5179/${slug}/` : `http://localhost:${port}/`;
+const url = Array.isArray(shelf) && shelf.some((b) => b?.slug === slug) ? `http://localhost:5179/${slug}/` : `http://localhost:${port}/`;
 
 const at = opt('--at')?.split(',').map(Number), chapter = opt('--chapter');
 const saved = {
@@ -46,8 +48,18 @@ const page = await browser.newPage();
 await page.setViewport({ width: 1400, height: 900 });
 await page.goto(url, { waitUntil: 'networkidle2' });
 await page.evaluate((v) => { localStorage.clear(); localStorage.setItem(window.__store, v); }, JSON.stringify(saved));
+const said = new Set();
+page.on('console', (m) => {
+  if (!['warn', 'error'].includes(m.type()) || said.has(m.text())) return;
+  said.add(m.text());
+  console.warn(`page ${m.type()}: ${m.text()}`);
+});
 await page.reload({ waitUntil: 'networkidle2' });
 await new Promise((r) => setTimeout(r, tiles ? 9000 : 3500));
+if (a.includes('--home')) {
+  await page.click('#book-title');
+  await new Promise((r) => setTimeout(r, tiles ? 6000 : 2500));
+}
 if (a.includes('--no-panel')) {
   // Without the panel, centre on --at across the whole window rather than beside the panel.
   await page.evaluate((v) => {

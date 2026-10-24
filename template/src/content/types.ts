@@ -119,7 +119,7 @@ export interface Quote {
   text: string;
   /** Page number, if given. */
   page?: string;
-  /** Who said it, when it isn't Olson. */
+  /** Who said it, when it isn't the author. */
   by?: string;
   /** The concept it bears on, linked from its caption. */
   about?: string;
